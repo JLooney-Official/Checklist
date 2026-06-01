@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#111827" />
-  <title>Josh's Checklist</title>
+  <title>Private Checklist</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -12,109 +12,206 @@
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
+    <header class="hero">
       <div>
-        <p class="eyebrow">Personal checklist PWA</p>
-        <h1>Josh's Checklist</h1>
+        <p class="eyebrow">Local-only checklist PWA</p>
+        <h1 id="appTitleText">Private Checklist</h1>
+        <p class="subtitle">Tasks stay on this phone/browser unless you export a backup.</p>
       </div>
-      <button id="installBtn" class="ghost hidden" type="button">Install</button>
+
+      <div class="hero-actions">
+        <button id="installBtn" class="pill hidden" type="button">Install</button>
+        <button id="settingsBtn" class="icon-pill" type="button" aria-label="Open settings">⚙</button>
+      </div>
     </header>
 
-    <section class="stats-card">
-      <div>
-        <strong id="doneCount">0</strong>
-        <span>Done</span>
-      </div>
-      <div>
+    <section class="dashboard">
+      <article class="stat-card">
         <strong id="openCount">0</strong>
         <span>Open</span>
-      </div>
-      <div>
+      </article>
+      <article class="stat-card">
+        <strong id="doneCount">0</strong>
+        <span>Done</span>
+      </article>
+      <article class="stat-card">
         <strong id="todayCount">0</strong>
-        <span>Due today</span>
+        <span>Today</span>
+      </article>
+      <article class="stat-card">
+        <strong id="overdueCount">0</strong>
+        <span>Overdue</span>
+      </article>
+    </section>
+
+    <section class="progress-panel">
+      <div class="progress-row">
+        <span id="progressLabel">0% complete</span>
+        <span id="progressSubLabel">No tasks yet</span>
+      </div>
+      <div class="progress-track">
+        <div id="progressBar" class="progress-bar"></div>
       </div>
     </section>
 
-    <main>
-      <section class="panel">
-        <h2>Add task</h2>
+    <main class="layout">
+      <section class="panel add-panel">
+        <div class="section-head">
+          <div>
+            <h2>Add task</h2>
+            <p>Create a normal task, a daily checklist item, or a task with steps.</p>
+          </div>
+        </div>
+
         <form id="taskForm" class="task-form">
           <label>
             Task
-            <input id="taskTitle" name="title" type="text" placeholder="Example: Do daily game tasks" autocomplete="off" required />
+            <input id="taskTitle" type="text" placeholder="Example: Finish today's checklist" autocomplete="off" required />
           </label>
 
           <label>
             Notes
-            <textarea id="taskNotes" name="notes" placeholder="Optional details..."></textarea>
+            <textarea id="taskNotes" placeholder="Optional details..."></textarea>
           </label>
 
-          <div class="grid-3">
+          <div class="grid-2">
             <label>
               List
-              <select id="taskCategory" name="category">
-                <option>General</option>
-                <option>Daily</option>
-                <option>Work</option>
-                <option>Gaming</option>
-                <option>Errands</option>
-              </select>
+              <input id="taskCategory" list="categoryOptions" placeholder="General" value="General" />
+              <datalist id="categoryOptions"></datalist>
             </label>
 
             <label>
               Priority
-              <select id="taskPriority" name="priority">
+              <select id="taskPriority">
                 <option value="low">Low</option>
                 <option value="normal" selected>Normal</option>
                 <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Due date
+              <input id="taskDue" type="date" />
+            </label>
+
+            <label>
+              Due time
+              <input id="taskTime" type="time" />
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Repeat
+              <select id="taskRepeat">
+                <option value="none" selected>No repeat</option>
+                <option value="daily">Daily reset</option>
+                <option value="weekly">Weekly reset</option>
+                <option value="monthly">Monthly reset</option>
               </select>
             </label>
 
             <label>
-              Due
-              <input id="taskDue" name="due" type="date" />
+              Tags
+              <input id="taskTags" type="text" placeholder="work, game, urgent" />
             </label>
           </div>
 
-          <label class="checkbox-row">
-            <input id="taskRepeats" name="repeatsDaily" type="checkbox" />
-            <span>Daily reset task</span>
+          <label>
+            Subtasks / steps
+            <textarea id="taskSubtasks" placeholder="One step per line, optional"></textarea>
           </label>
 
-          <button class="primary" type="submit">Add to checklist</button>
+          <div class="quick-flags">
+            <label class="check-row">
+              <input id="taskPinned" type="checkbox" />
+              <span>Pin to top</span>
+            </label>
+
+            <label class="check-row">
+              <input id="taskImportant" type="checkbox" />
+              <span>Important</span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button class="primary" type="submit">Add task</button>
+            <button id="addTodayBtn" class="pill" type="button">Add for today</button>
+          </div>
         </form>
       </section>
 
-      <section class="toolbar">
-        <input id="searchInput" type="search" placeholder="Search tasks..." />
+      <section class="panel list-panel">
+        <div class="section-head sticky-head">
+          <div>
+            <h2>Checklist</h2>
+            <p id="visibleCountLabel">0 visible tasks</p>
+          </div>
 
-        <select id="filterStatus" aria-label="Filter status">
-          <option value="all">All</option>
-          <option value="open">Open</option>
-          <option value="done">Done</option>
-          <option value="today">Due today</option>
-          <option value="daily">Daily reset</option>
-        </select>
-
-        <select id="filterCategory" aria-label="Filter category">
-          <option value="all">All lists</option>
-        </select>
-      </section>
-
-      <section class="panel">
-        <div class="list-header">
-          <h2>Your checklist</h2>
-          <div class="header-actions">
-            <button id="resetDailyBtn" class="ghost" type="button">Reset daily</button>
-            <button id="clearDoneBtn" class="ghost danger" type="button">Clear done</button>
+          <div class="mini-actions">
+            <button id="resetRecurringBtn" class="pill" type="button">Reset repeats</button>
+            <button id="clearDoneBtn" class="pill danger" type="button">Clear done</button>
           </div>
         </div>
+
+        <section class="filter-grid">
+          <label>
+            Search
+            <input id="searchInput" type="search" placeholder="Search tasks, notes, tags..." />
+          </label>
+
+          <label>
+            View
+            <select id="filterStatus">
+              <option value="all">All open</option>
+              <option value="today">Due today</option>
+              <option value="overdue">Overdue</option>
+              <option value="important">Important</option>
+              <option value="pinned">Pinned</option>
+              <option value="recurring">Recurring</option>
+              <option value="done">Completed</option>
+              <option value="everything">Everything</option>
+            </select>
+          </label>
+
+          <label>
+            List
+            <select id="filterCategory">
+              <option value="all">All lists</option>
+            </select>
+          </label>
+
+          <label>
+            Sort
+            <select id="sortMode">
+              <option value="smart">Smart</option>
+              <option value="due">Due date</option>
+              <option value="priority">Priority</option>
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="az">A-Z</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="bulk-bar">
+          <button id="exportBtn" class="pill" type="button">Export backup</button>
+          <label class="pill file-pill">
+            Import backup
+            <input id="importInput" type="file" accept="application/json" />
+          </label>
+          <button id="shareBtn" class="pill" type="button">Share text</button>
+        </section>
 
         <div id="taskList" class="task-list"></div>
 
         <div id="emptyState" class="empty-state hidden">
           <div class="empty-icon">✓</div>
-          <h3>No tasks here</h3>
+          <h3>Nothing here</h3>
           <p>Add a task or change your filters.</p>
         </div>
       </section>
@@ -123,7 +220,11 @@
 
   <dialog id="editDialog">
     <form id="editForm" method="dialog" class="dialog-card">
-      <h2>Edit task</h2>
+      <div class="dialog-head">
+        <h2>Edit task</h2>
+        <button id="cancelEditBtn" class="icon-pill" type="button" aria-label="Close">×</button>
+      </div>
+
       <input type="hidden" id="editId" />
 
       <label>
@@ -136,10 +237,10 @@
         <textarea id="editNotes"></textarea>
       </label>
 
-      <div class="grid-3">
+      <div class="grid-2">
         <label>
           List
-          <input id="editCategory" type="text" required />
+          <input id="editCategory" list="categoryOptions" />
         </label>
 
         <label>
@@ -148,23 +249,94 @@
             <option value="low">Low</option>
             <option value="normal">Normal</option>
             <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          Due date
+          <input id="editDue" type="date" />
+        </label>
+
+        <label>
+          Due time
+          <input id="editTime" type="time" />
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          Repeat
+          <select id="editRepeat">
+            <option value="none">No repeat</option>
+            <option value="daily">Daily reset</option>
+            <option value="weekly">Weekly reset</option>
+            <option value="monthly">Monthly reset</option>
           </select>
         </label>
 
         <label>
-          Due
-          <input id="editDue" type="date" />
+          Tags
+          <input id="editTags" type="text" />
         </label>
       </div>
 
-      <label class="checkbox-row">
-        <input id="editRepeats" type="checkbox" />
-        <span>Daily reset task</span>
+      <label>
+        Subtasks / steps
+        <textarea id="editSubtasks" placeholder="One step per line"></textarea>
       </label>
 
+      <div class="quick-flags">
+        <label class="check-row">
+          <input id="editPinned" type="checkbox" />
+          <span>Pin to top</span>
+        </label>
+
+        <label class="check-row">
+          <input id="editImportant" type="checkbox" />
+          <span>Important</span>
+        </label>
+      </div>
+
       <div class="dialog-actions">
-        <button value="cancel" class="ghost" type="button" id="cancelEditBtn">Cancel</button>
+        <button id="deleteFromEditBtn" class="pill danger" type="button">Delete</button>
         <button class="primary" type="submit">Save changes</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog">
+    <form id="settingsForm" method="dialog" class="dialog-card">
+      <div class="dialog-head">
+        <h2>Settings</h2>
+        <button id="cancelSettingsBtn" class="icon-pill" type="button" aria-label="Close">×</button>
+      </div>
+
+      <label>
+        App title
+        <input id="settingTitle" type="text" placeholder="Private Checklist" />
+      </label>
+
+      <label>
+        Theme
+        <select id="settingTheme">
+          <option value="midnight">Midnight</option>
+          <option value="forest">Forest</option>
+          <option value="purple">Purple</option>
+          <option value="plain">Plain dark</option>
+        </select>
+      </label>
+
+      <div class="privacy-box">
+        <strong>Privacy</strong>
+        <p>This app saves tasks locally on this device/browser. GitHub Pages only hosts the app code, not your checklist data.</p>
+      </div>
+
+      <div class="dialog-actions">
+        <button id="wipeDataBtn" class="pill danger" type="button">Wipe all data</button>
+        <button class="primary" type="submit">Save settings</button>
       </div>
     </form>
   </dialog>

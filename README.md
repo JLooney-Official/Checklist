@@ -1,65 +1,66 @@
-# Josh's Checklist PWA
+# Private Checklist PWA v3
 
-This is a rough-draft installable checklist app for Android.
+This is an upgraded Android-friendly Progressive Web App checklist.
 
-## Features in this draft
+## New in v3
 
-- Add checklist tasks
-- Mark tasks done/open
-- Edit tasks
-- Delete tasks
-- Notes
-- Lists/categories
-- Priority
-- Due dates
-- Search
-- Filters
-- Daily reset tasks
-- Saves locally on the phone/browser
-- PWA manifest
+- Larger check-off button on every task
+- Dedicated Done/Reopen button
+- Progress bar
+- Open, done, today, and overdue dashboard stats
+- Custom app title in settings
+- Theme options
+- Custom lists/categories
+- Priority levels: Low, Normal, High, Urgent
+- Due date and due time
+- Recurring tasks: daily, weekly, monthly
+- Reset repeating tasks
+- Important flag
+- Pin to top
+- Tags
+- Subtasks/steps
+- Search across title, notes, tags, subtasks
+- Filters: today, overdue, important, pinned, recurring, completed, everything
+- Sort modes
+- Duplicate task
+- Snooze task +1 day
+- Export backup JSON
+- Import backup JSON
+- Share/copy open checklist as text
+- Local-only privacy message
 - Offline service worker
+- PWA manifest for Android install
 
-## Important
+## Privacy
 
-The app stores tasks in the browser using `localStorage`.
+Your checklist data is stored locally in the browser using `localStorage`.
 
 That means:
-- No account is required.
-- No server is required.
-- Tasks stay on the device/browser where you use the app.
-- Clearing browser site data can delete tasks.
+- Your tasks are not uploaded to GitHub.
+- Your tasks are not public on GitHub Pages.
+- Other people opening your public app link will not see your tasks.
+- Each device/browser has its own separate checklist.
+- Clearing browser site data can delete your checklist.
+- Use Export Backup before major changes or before clearing browser data.
 
-## How to test on your computer
+## Updating GitHub Pages
 
-Open `index.html` in your browser.
+Upload/replace these files in your GitHub repository:
 
-The app will work, but PWA install/offline behavior works best when hosted at an HTTPS URL.
+- `index.html`
+- `style.css`
+- `app.js`
+- `manifest.json`
+- `service-worker.js`
+- `README.md`
+- `icons/icon-192.png`
+- `icons/icon-512.png`
 
-## How to test on Android like an app
+After replacing files, open the GitHub Pages link on your phone and refresh. If the old version still appears, close Chrome and reopen, or clear site data for the page.
 
-The easiest free options are:
+## Install on Android
 
-1. Upload this folder to GitHub Pages, Netlify, or Cloudflare Pages.
-2. Open the hosted link in Chrome on Android.
-3. Tap the three-dot menu.
-4. Tap "Add to Home screen" or "Install app."
+Open your GitHub Pages link in Chrome, then:
 
-## Files
+Menu ⋮ → Add to Home screen / Install app
 
-- `index.html` - app screen
-- `style.css` - design
-- `app.js` - checklist logic
-- `manifest.json` - Android install metadata
-- `service-worker.js` - offline caching
-- `icons/` - app icons
-
-## Good next features
-
-- Multiple checklist templates
-- Morning/night mode
-- Drag-and-drop sorting
-- Export/import backup file
-- Real reminders/notifications
-- Cloud sync
-- Password/PIN lock
-- Streak tracking

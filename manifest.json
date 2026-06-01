@@ -1,11 +1,11 @@
 {
-  "name": "Josh's Checklist",
+  "name": "Private Checklist",
   "short_name": "Checklist",
-  "description": "A custom personal to-do list and checklist PWA.",
+  "description": "A private local-only checklist and to-do Progressive Web App.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "background_color": "#07111f",
   "theme_color": "#111827",
   "orientation": "portrait",
   "icons": [
@@ -20,6 +20,20 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Checklist",
+      "short_name": "Checklist",
+      "description": "Open your private checklist",
+      "url": "./index.html",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
