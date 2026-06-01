@@ -1,3 +1,5 @@
+const APP_VERSION = "4.1";
+const APP_BUILD = "2026-06-01";
 const STORAGE_KEY = "privateChecklist.tasks.v4";
 const SETTINGS_KEY = "privateChecklist.settings.v4";
 const OLD_TASK_KEYS = ["privateChecklist.tasks.v3", "privateChecklist.tasks.v2", "joshsChecklist.tasks.v1"];
@@ -126,7 +128,8 @@ const els = {
   cancelSettings: $("#cancelSettingsBtn"),
   wipeData: $("#wipeDataBtn"),
 
-  toast: $("#toast")
+  toast: $("#toast"),
+  versionLabel: $("#versionLabel")
 };
 
 applySettings();
@@ -522,6 +525,7 @@ function applySettings() {
   if (settings.theme !== "midnight") document.body.classList.add(`theme-${settings.theme}`);
   els.appTitle.textContent = settings.title;
   document.title = settings.title;
+  if (els.versionLabel) els.versionLabel.textContent = `${settings.title} v${APP_VERSION}`;
 
   if (els.category) els.category.value = settings.defaultCategory;
   if (els.reminder) els.reminder.value = settings.defaultReminder;
@@ -1152,7 +1156,8 @@ async function showLocalNotification(title, body, taskId = "") {
 function exportBackup() {
   const backup = {
     app: "Private Checklist",
-    version: 4,
+    version: APP_VERSION,
+    build: APP_BUILD,
     exportedAt: new Date().toISOString(),
     settings,
     tasks
@@ -1219,7 +1224,7 @@ async function shareChecklistText() {
       await navigator.share({ title: settings.title, text });
       return;
     } catch {
-      // User may cancel share sheet; fall through to copy.
+
     }
   }
 

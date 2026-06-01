@@ -1,7 +1,7 @@
 {
   "name": "Private Checklist",
   "short_name": "Checklist",
-  "description": "A private local-only checklist and to-do Progressive Web App with reminders.",
+  "description": "Private Checklist v4.1: a local-only checklist and to-do PWA with reminders.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -35,5 +35,6 @@
         }
       ]
     }
-  ]
+  ],
+  "id": "./index.html"
 }

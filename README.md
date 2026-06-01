@@ -1,8 +1,15 @@
-# Private Checklist PWA v4
+# Private Checklist PWA v4.1
 
-This is the v4 upgraded Android-friendly Progressive Web App checklist.
+Android-friendly local checklist app.
 
-## New in v4
+## v4.1 changes
+
+- Added footer version info at the bottom of the app
+- Updated service worker cache name so the new build is easier to refresh
+- Cleaned up source files and removed unnecessary generated-looking comments
+- Backup exports now include version/build metadata
+
+## Included from v4
 
 - Notification permission button
 - Test notification button
@@ -12,42 +19,22 @@ This is the v4 upgraded Android-friendly Progressive Web App checklist.
 - Quick add panel
 - Quick today/tomorrow/high-priority task shortcuts
 - Dashboard stat buttons that switch views
-- Template checklists:
-  - Daily routine
-  - Work block
-  - Game dailies
-  - Errands
-- Auto-reset recurring tasks when day/week/month changes
-- Default list setting
-- Default reminder setting
-- Default sort setting
-- Sunset theme
-- Focus today button
-- Finish visible button
+- Template checklists
+- Auto-reset recurring tasks
+- Default list, reminder, and sort settings
+- Themes
+- Focus Today button
+- Finish Visible button
 - Manual move up/down controls
-- Energy labels: Easy, Normal, Hard
-- Better subtask progress text
-- Notification/privacy panel
-
-## Notification limitations
-
-This is still a no-server, local-only PWA.
-
-Local reminders work best when the app is open, recently active, or running as an installed PWA/browser session.
-
-Fully reliable background notifications when the app is completely closed for long periods usually require Web Push plus a server/service such as Firebase Cloud Messaging.
+- Energy labels
+- Subtask progress
+- Export/import backup
 
 ## Privacy
 
-Your checklist data is stored locally in the browser using `localStorage`.
+Checklist data is stored locally in the browser using `localStorage`.
 
-That means:
-- Your tasks are not uploaded to GitHub.
-- Your tasks are not public on GitHub Pages.
-- Other people opening your public app link will not see your tasks.
-- Each device/browser has its own separate checklist.
-- Clearing browser site data can delete your checklist.
-- Use Export Backup before major changes or before clearing browser data.
+Your tasks are not uploaded to GitHub and are not public on GitHub Pages. Each device/browser has its own separate checklist. Export a backup before clearing browser data.
 
 ## Updating GitHub Pages
 
@@ -62,10 +49,4 @@ Upload/replace these files in your GitHub repository:
 - `icons/icon-192.png`
 - `icons/icon-512.png`
 
-After replacing files, open the GitHub Pages link on your phone and refresh. If the old version still appears, close Chrome and reopen, or clear site data for the page.
-
-## Install on Android
-
-Open your GitHub Pages link in Chrome, then:
-
-Menu ⋮ → Add to Home screen / Install app
+After uploading, refresh your GitHub Pages link. If the old build still appears, close Chrome and reopen it, or clear site data for the page.
