@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <title>Josh's Checklist</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Personal checklist PWA</p>
+        <h1>Josh's Checklist</h1>
+      </div>
+      <button id="installBtn" class="ghost hidden" type="button">Install</button>
+    </header>
+
+    <section class="stats-card">
+      <div>
+        <strong id="doneCount">0</strong>
+        <span>Done</span>
+      </div>
+      <div>
+        <strong id="openCount">0</strong>
+        <span>Open</span>
+      </div>
+      <div>
+        <strong id="todayCount">0</strong>
+        <span>Due today</span>
+      </div>
+    </section>
+
+    <main>
+      <section class="panel">
+        <h2>Add task</h2>
+        <form id="taskForm" class="task-form">
+          <label>
+            Task
+            <input id="taskTitle" name="title" type="text" placeholder="Example: Do daily game tasks" autocomplete="off" required />
+          </label>
+
+          <label>
+            Notes
+            <textarea id="taskNotes" name="notes" placeholder="Optional details..."></textarea>
+          </label>
+
+          <div class="grid-3">
+            <label>
+              List
+              <select id="taskCategory" name="category">
+                <option>General</option>
+                <option>Daily</option>
+                <option>Work</option>
+                <option>Gaming</option>
+                <option>Errands</option>
+              </select>
+            </label>
+
+            <label>
+              Priority
+              <select id="taskPriority" name="priority">
+                <option value="low">Low</option>
+                <option value="normal" selected>Normal</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+
+            <label>
+              Due
+              <input id="taskDue" name="due" type="date" />
+            </label>
+          </div>
+
+          <label class="checkbox-row">
+            <input id="taskRepeats" name="repeatsDaily" type="checkbox" />
+            <span>Daily reset task</span>
+          </label>
+
+          <button class="primary" type="submit">Add to checklist</button>
+        </form>
+      </section>
+
+      <section class="toolbar">
+        <input id="searchInput" type="search" placeholder="Search tasks..." />
+
+        <select id="filterStatus" aria-label="Filter status">
+          <option value="all">All</option>
+          <option value="open">Open</option>
+          <option value="done">Done</option>
+          <option value="today">Due today</option>
+          <option value="daily">Daily reset</option>
+        </select>
+
+        <select id="filterCategory" aria-label="Filter category">
+          <option value="all">All lists</option>
+        </select>
+      </section>
+
+      <section class="panel">
+        <div class="list-header">
+          <h2>Your checklist</h2>
+          <div class="header-actions">
+            <button id="resetDailyBtn" class="ghost" type="button">Reset daily</button>
+            <button id="clearDoneBtn" class="ghost danger" type="button">Clear done</button>
+          </div>
+        </div>
+
+        <div id="taskList" class="task-list"></div>
+
+        <div id="emptyState" class="empty-state hidden">
+          <div class="empty-icon">✓</div>
+          <h3>No tasks here</h3>
+          <p>Add a task or change your filters.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="editDialog">
+    <form id="editForm" method="dialog" class="dialog-card">
+      <h2>Edit task</h2>
+      <input type="hidden" id="editId" />
+
+      <label>
+        Task
+        <input id="editTitle" type="text" required />
+      </label>
+
+      <label>
+        Notes
+        <textarea id="editNotes"></textarea>
+      </label>
+
+      <div class="grid-3">
+        <label>
+          List
+          <input id="editCategory" type="text" required />
+        </label>
+
+        <label>
+          Priority
+          <select id="editPriority">
+            <option value="low">Low</option>
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+
+        <label>
+          Due
+          <input id="editDue" type="date" />
+        </label>
+      </div>
+
+      <label class="checkbox-row">
+        <input id="editRepeats" type="checkbox" />
+        <span>Daily reset task</span>
+      </label>
+
+      <div class="dialog-actions">
+        <button value="cancel" class="ghost" type="button" id="cancelEditBtn">Cancel</button>
+        <button class="primary" type="submit">Save changes</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
