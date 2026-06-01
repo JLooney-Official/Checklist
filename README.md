@@ -1,35 +1,41 @@
-# Private Checklist PWA v3
+# Private Checklist PWA v4
 
-This is an upgraded Android-friendly Progressive Web App checklist.
+This is the v4 upgraded Android-friendly Progressive Web App checklist.
 
-## New in v3
+## New in v4
 
-- Larger check-off button on every task
-- Dedicated Done/Reopen button
-- Progress bar
-- Open, done, today, and overdue dashboard stats
-- Custom app title in settings
-- Theme options
-- Custom lists/categories
-- Priority levels: Low, Normal, High, Urgent
-- Due date and due time
-- Recurring tasks: daily, weekly, monthly
-- Reset repeating tasks
-- Important flag
-- Pin to top
-- Tags
-- Subtasks/steps
-- Search across title, notes, tags, subtasks
-- Filters: today, overdue, important, pinned, recurring, completed, everything
-- Sort modes
-- Duplicate task
-- Snooze task +1 day
-- Export backup JSON
-- Import backup JSON
-- Share/copy open checklist as text
-- Local-only privacy message
-- Offline service worker
-- PWA manifest for Android install
+- Notification permission button
+- Test notification button
+- Per-task reminders
+- Reminder options: due time, 5 min, 15 min, 30 min, 1 hour, 1 day
+- Notification click opens/focuses the app
+- Quick add panel
+- Quick today/tomorrow/high-priority task shortcuts
+- Dashboard stat buttons that switch views
+- Template checklists:
+  - Daily routine
+  - Work block
+  - Game dailies
+  - Errands
+- Auto-reset recurring tasks when day/week/month changes
+- Default list setting
+- Default reminder setting
+- Default sort setting
+- Sunset theme
+- Focus today button
+- Finish visible button
+- Manual move up/down controls
+- Energy labels: Easy, Normal, Hard
+- Better subtask progress text
+- Notification/privacy panel
+
+## Notification limitations
+
+This is still a no-server, local-only PWA.
+
+Local reminders work best when the app is open, recently active, or running as an installed PWA/browser session.
+
+Fully reliable background notifications when the app is completely closed for long periods usually require Web Push plus a server/service such as Firebase Cloud Messaging.
 
 ## Privacy
 
@@ -63,4 +69,3 @@ After replacing files, open the GitHub Pages link on your phone and refresh. If 
 Open your GitHub Pages link in Chrome, then:
 
 Menu ⋮ → Add to Home screen / Install app
-

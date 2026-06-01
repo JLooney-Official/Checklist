@@ -1,7 +1,7 @@
 {
   "name": "Private Checklist",
   "short_name": "Checklist",
-  "description": "A private local-only checklist and to-do Progressive Web App.",
+  "description": "A private local-only checklist and to-do Progressive Web App with reminders.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

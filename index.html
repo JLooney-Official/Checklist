@@ -16,32 +16,33 @@
       <div>
         <p class="eyebrow">Local-only checklist PWA</p>
         <h1 id="appTitleText">Private Checklist</h1>
-        <p class="subtitle">Tasks stay on this phone/browser unless you export a backup.</p>
+        <p class="subtitle">Private tasks, backups, recurring lists, reminders, and quick daily checkoffs.</p>
       </div>
 
       <div class="hero-actions">
         <button id="installBtn" class="pill hidden" type="button">Install</button>
+        <button id="notifyBtn" class="pill" type="button">Notifications</button>
         <button id="settingsBtn" class="icon-pill" type="button" aria-label="Open settings">⚙</button>
       </div>
     </header>
 
     <section class="dashboard">
-      <article class="stat-card">
+      <button class="stat-card filter-chip active" data-view="all" type="button">
         <strong id="openCount">0</strong>
         <span>Open</span>
-      </article>
-      <article class="stat-card">
-        <strong id="doneCount">0</strong>
-        <span>Done</span>
-      </article>
-      <article class="stat-card">
+      </button>
+      <button class="stat-card filter-chip" data-view="today" type="button">
         <strong id="todayCount">0</strong>
         <span>Today</span>
-      </article>
-      <article class="stat-card">
+      </button>
+      <button class="stat-card filter-chip" data-view="overdue" type="button">
         <strong id="overdueCount">0</strong>
         <span>Overdue</span>
-      </article>
+      </button>
+      <button class="stat-card filter-chip" data-view="done" type="button">
+        <strong id="doneCount">0</strong>
+        <span>Done</span>
+      </button>
     </section>
 
     <section class="progress-panel">
@@ -54,95 +55,177 @@
       </div>
     </section>
 
+    <section id="notificationPanel" class="notice-panel hidden">
+      <div>
+        <strong>Notifications are off</strong>
+        <p>Enable them to get due-task reminders while this PWA/browser session is active.</p>
+      </div>
+      <button id="enableNotificationsBtn" class="primary" type="button">Enable</button>
+    </section>
+
     <main class="layout">
-      <section class="panel add-panel">
-        <div class="section-head">
-          <div>
-            <h2>Add task</h2>
-            <p>Create a normal task, a daily checklist item, or a task with steps.</p>
-          </div>
-        </div>
-
-        <form id="taskForm" class="task-form">
-          <label>
-            Task
-            <input id="taskTitle" type="text" placeholder="Example: Finish today's checklist" autocomplete="off" required />
-          </label>
-
-          <label>
-            Notes
-            <textarea id="taskNotes" placeholder="Optional details..."></textarea>
-          </label>
-
-          <div class="grid-2">
-            <label>
-              List
-              <input id="taskCategory" list="categoryOptions" placeholder="General" value="General" />
-              <datalist id="categoryOptions"></datalist>
-            </label>
-
-            <label>
-              Priority
-              <select id="taskPriority">
-                <option value="low">Low</option>
-                <option value="normal" selected>Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </label>
+      <section class="left-column">
+        <section class="panel quick-add-panel">
+          <div class="section-head compact">
+            <div>
+              <h2>Quick add</h2>
+              <p>Fast task entry for phone use.</p>
+            </div>
           </div>
 
-          <div class="grid-2">
-            <label>
-              Due date
-              <input id="taskDue" type="date" />
-            </label>
+          <form id="quickAddForm" class="quick-add">
+            <input id="quickTitle" type="text" placeholder="Quick task..." autocomplete="off" />
+            <button class="primary" type="submit">Add</button>
+          </form>
 
-            <label>
-              Due time
-              <input id="taskTime" type="time" />
-            </label>
+          <div class="quick-buttons">
+            <button class="pill" type="button" data-quick-due="today">Today</button>
+            <button class="pill" type="button" data-quick-due="tomorrow">Tomorrow</button>
+            <button class="pill" type="button" data-quick-priority="high">High priority</button>
+          </div>
+        </section>
+
+        <section class="panel template-panel">
+          <div class="section-head compact">
+            <div>
+              <h2>Templates</h2>
+              <p>Add common checklists instantly.</p>
+            </div>
           </div>
 
-          <div class="grid-2">
+          <div class="template-grid">
+            <button class="template-card" type="button" data-template="daily">
+              <strong>Daily routine</strong>
+              <span>Morning/evening basics</span>
+            </button>
+            <button class="template-card" type="button" data-template="work">
+              <strong>Work block</strong>
+              <span>Focus, email, follow-up</span>
+            </button>
+            <button class="template-card" type="button" data-template="gaming">
+              <strong>Game dailies</strong>
+              <span>Daily gaming checklist</span>
+            </button>
+            <button class="template-card" type="button" data-template="errands">
+              <strong>Errands</strong>
+              <span>Store, calls, chores</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel add-panel">
+          <div class="section-head compact">
+            <div>
+              <h2>Add detailed task</h2>
+              <p>Use when you need notes, reminders, tags, or steps.</p>
+            </div>
+          </div>
+
+          <form id="taskForm" class="task-form">
             <label>
-              Repeat
-              <select id="taskRepeat">
-                <option value="none" selected>No repeat</option>
-                <option value="daily">Daily reset</option>
-                <option value="weekly">Weekly reset</option>
-                <option value="monthly">Monthly reset</option>
-              </select>
+              Task
+              <input id="taskTitle" type="text" placeholder="Example: Finish today's checklist" autocomplete="off" required />
             </label>
 
             <label>
-              Tags
-              <input id="taskTags" type="text" placeholder="work, game, urgent" />
-            </label>
-          </div>
-
-          <label>
-            Subtasks / steps
-            <textarea id="taskSubtasks" placeholder="One step per line, optional"></textarea>
-          </label>
-
-          <div class="quick-flags">
-            <label class="check-row">
-              <input id="taskPinned" type="checkbox" />
-              <span>Pin to top</span>
+              Notes
+              <textarea id="taskNotes" placeholder="Optional details..."></textarea>
             </label>
 
-            <label class="check-row">
-              <input id="taskImportant" type="checkbox" />
-              <span>Important</span>
-            </label>
-          </div>
+            <div class="grid-2">
+              <label>
+                List
+                <input id="taskCategory" list="categoryOptions" placeholder="General" value="General" />
+                <datalist id="categoryOptions"></datalist>
+              </label>
 
-          <div class="form-actions">
-            <button class="primary" type="submit">Add task</button>
-            <button id="addTodayBtn" class="pill" type="button">Add for today</button>
-          </div>
-        </form>
+              <label>
+                Priority
+                <select id="taskPriority">
+                  <option value="low">Low</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="grid-2">
+              <label>
+                Due date
+                <input id="taskDue" type="date" />
+              </label>
+
+              <label>
+                Due time
+                <input id="taskTime" type="time" />
+              </label>
+            </div>
+
+            <div class="grid-2">
+              <label>
+                Reminder
+                <select id="taskReminder">
+                  <option value="off">No reminder</option>
+                  <option value="0">At due time</option>
+                  <option value="5">5 min before</option>
+                  <option value="15">15 min before</option>
+                  <option value="30">30 min before</option>
+                  <option value="60">1 hour before</option>
+                  <option value="1440">1 day before</option>
+                </select>
+              </label>
+
+              <label>
+                Repeat
+                <select id="taskRepeat">
+                  <option value="none" selected>No repeat</option>
+                  <option value="daily">Daily reset</option>
+                  <option value="weekly">Weekly reset</option>
+                  <option value="monthly">Monthly reset</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="grid-2">
+              <label>
+                Tags
+                <input id="taskTags" type="text" placeholder="work, game, urgent" />
+              </label>
+
+              <label>
+                Energy
+                <select id="taskEnergy">
+                  <option value="normal" selected>Normal</option>
+                  <option value="easy">Easy</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Subtasks / steps
+              <textarea id="taskSubtasks" placeholder="One step per line, optional"></textarea>
+            </label>
+
+            <div class="quick-flags">
+              <label class="check-row">
+                <input id="taskPinned" type="checkbox" />
+                <span>Pin to top</span>
+              </label>
+
+              <label class="check-row">
+                <input id="taskImportant" type="checkbox" />
+                <span>Important</span>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button class="primary" type="submit">Add task</button>
+              <button id="addTodayBtn" class="pill" type="button">Add for today</button>
+            </div>
+          </form>
+        </section>
       </section>
 
       <section class="panel list-panel">
@@ -153,8 +236,9 @@
           </div>
 
           <div class="mini-actions">
+            <button id="focusTodayBtn" class="pill" type="button">Focus today</button>
             <button id="resetRecurringBtn" class="pill" type="button">Reset repeats</button>
-            <button id="clearDoneBtn" class="pill danger" type="button">Clear done</button>
+            <button id="markVisibleDoneBtn" class="pill" type="button">Finish visible</button>
           </div>
         </div>
 
@@ -170,9 +254,11 @@
               <option value="all">All open</option>
               <option value="today">Due today</option>
               <option value="overdue">Overdue</option>
+              <option value="upcoming">Upcoming</option>
               <option value="important">Important</option>
               <option value="pinned">Pinned</option>
               <option value="recurring">Recurring</option>
+              <option value="reminders">With reminders</option>
               <option value="done">Completed</option>
               <option value="everything">Everything</option>
             </select>
@@ -194,6 +280,7 @@
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
               <option value="az">A-Z</option>
+              <option value="manual">Manual</option>
             </select>
           </label>
         </section>
@@ -205,6 +292,7 @@
             <input id="importInput" type="file" accept="application/json" />
           </label>
           <button id="shareBtn" class="pill" type="button">Share text</button>
+          <button id="clearDoneBtn" class="pill danger" type="button">Clear done</button>
         </section>
 
         <div id="taskList" class="task-list"></div>
@@ -268,6 +356,19 @@
 
       <div class="grid-2">
         <label>
+          Reminder
+          <select id="editReminder">
+            <option value="off">No reminder</option>
+            <option value="0">At due time</option>
+            <option value="5">5 min before</option>
+            <option value="15">15 min before</option>
+            <option value="30">30 min before</option>
+            <option value="60">1 hour before</option>
+            <option value="1440">1 day before</option>
+          </select>
+        </label>
+
+        <label>
           Repeat
           <select id="editRepeat">
             <option value="none">No repeat</option>
@@ -276,10 +377,21 @@
             <option value="monthly">Monthly reset</option>
           </select>
         </label>
+      </div>
 
+      <div class="grid-2">
         <label>
           Tags
           <input id="editTags" type="text" />
+        </label>
+
+        <label>
+          Energy
+          <select id="editEnergy">
+            <option value="normal">Normal</option>
+            <option value="easy">Easy</option>
+            <option value="hard">Hard</option>
+          </select>
         </label>
       </div>
 
@@ -319,19 +431,70 @@
         <input id="settingTitle" type="text" placeholder="Private Checklist" />
       </label>
 
-      <label>
-        Theme
-        <select id="settingTheme">
-          <option value="midnight">Midnight</option>
-          <option value="forest">Forest</option>
-          <option value="purple">Purple</option>
-          <option value="plain">Plain dark</option>
-        </select>
+      <div class="grid-2">
+        <label>
+          Theme
+          <select id="settingTheme">
+            <option value="midnight">Midnight</option>
+            <option value="forest">Forest</option>
+            <option value="purple">Purple</option>
+            <option value="plain">Plain dark</option>
+            <option value="sunset">Sunset</option>
+          </select>
+        </label>
+
+        <label>
+          Default list
+          <input id="settingDefaultCategory" type="text" placeholder="General" />
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          Default reminder
+          <select id="settingDefaultReminder">
+            <option value="off">No reminder</option>
+            <option value="0">At due time</option>
+            <option value="5">5 min before</option>
+            <option value="15">15 min before</option>
+            <option value="30">30 min before</option>
+            <option value="60">1 hour before</option>
+            <option value="1440">1 day before</option>
+          </select>
+        </label>
+
+        <label>
+          Default sort
+          <select id="settingDefaultSort">
+            <option value="smart">Smart</option>
+            <option value="due">Due date</option>
+            <option value="priority">Priority</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="az">A-Z</option>
+            <option value="manual">Manual</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="settings-actions">
+        <button id="requestNotifyBtn" class="pill" type="button">Enable notifications</button>
+        <button id="testNotifyBtn" class="pill" type="button">Test notification</button>
+      </div>
+
+      <label class="check-row">
+        <input id="settingAutoReset" type="checkbox" />
+        <span>Auto-reset recurring tasks when a new day/week/month starts</span>
+      </label>
+
+      <label class="check-row">
+        <input id="settingReminderSound" type="checkbox" />
+        <span>Allow vibration/sound style notifications when supported</span>
       </label>
 
       <div class="privacy-box">
         <strong>Privacy</strong>
-        <p>This app saves tasks locally on this device/browser. GitHub Pages only hosts the app code, not your checklist data.</p>
+        <p>This app saves tasks locally on this device/browser. GitHub Pages only hosts the app code, not your checklist data. Reminder notifications are created on-device by the app.</p>
       </div>
 
       <div class="dialog-actions">
