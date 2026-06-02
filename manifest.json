@@ -1,7 +1,7 @@
 {
   "name": "Private Checklist",
   "short_name": "Checklist",
-  "description": "Private Checklist v5.3: local checklist with voice tasks, Google Calendar export, reminders, templates, and backups.",
+  "description": "Private Checklist v5.4: local checklist with focused voice task creation, reminders, templates, and backups.",
   "id": "./index.html",
   "start_url": "./index.html",
   "scope": "./",

@@ -22,7 +22,6 @@
       <div class="hero-actions">
         <button id="installBtn" class="pill hidden" type="button">Install</button>
         <button id="jumpRemindersBtn" class="pill" type="button">Reminders</button>
-        <button id="jumpGoogleBtn" class="pill" type="button">Google</button>
         <button id="jumpVoiceBtn" class="pill" type="button">Voice</button>
         <button id="jumpSettingsBtn" class="icon-pill" type="button" aria-label="Settings">⚙</button>
       </div>
@@ -33,7 +32,6 @@
       <button class="tab-btn" type="button" data-tab="add">Add Task</button>
       <button class="tab-btn" type="button" data-tab="reminders">Reminders</button>
       <button class="tab-btn" type="button" data-tab="templates">Templates</button>
-      <button class="tab-btn" type="button" data-tab="google">Google</button>
       <button class="tab-btn" type="button" data-tab="voice">Voice</button>
       <button class="tab-btn" type="button" data-tab="settings">Settings</button>
     </nav>
@@ -378,102 +376,64 @@
       </section>
 
 
-      <section id="tab-google" class="tab-panel">
-        <section class="panel">
-          <div class="section-head">
-            <div>
-              <h2>Google tools</h2>
-              <p>Move tasks into Google Calendar or create email drafts from tasks.</p>
-            </div>
-          </div>
-
-          <section class="notification-card">
-            <div>
-              <span class="status-badge good">Calendar option</span>
-              <h3>Use Google Calendar for reliable reminders</h3>
-              <p>Open a task as a Google Calendar event draft, save it, and let Calendar handle the notification.</p>
-            </div>
-
-            <div class="notification-actions">
-              <button id="googleViewDueTasksBtn" class="primary" type="button">Show due tasks</button>
-              <button id="downloadVisibleIcsBtn" class="pill" type="button">Download visible .ics</button>
-            </div>
-          </section>
-
-          <section class="setup-grid">
-            <article class="setup-card">
-              <strong>Google Calendar</strong>
-              <p>Opens a prefilled event draft. You still tap Save in Calendar.</p>
-            </article>
-
-            <article class="setup-card">
-              <strong>.ics export</strong>
-              <p>Downloads a calendar file. Good for backup or importing several tasks.</p>
-            </article>
-
-            <article class="setup-card">
-              <strong>Email draft</strong>
-              <p>Opens your mail app with the task text filled in. You choose the recipient and send it.</p>
-            </article>
-
-            <article class="setup-card">
-              <strong>No Google login stored</strong>
-              <p>This version does not store Google tokens or passwords in the app.</p>
-            </article>
-          </section>
-
-          <section class="help-box">
-            <h3>How this helps notifications</h3>
-            <p>Local PWA notifications can be inconsistent on Android. Google Calendar reminders are usually more dependable because Calendar/Android handles them after you save the event.</p>
-          </section>
-
-          <section class="reminder-list-wrap">
-            <div class="section-head small">
-              <div>
-                <h2>Tasks ready for Google</h2>
-                <p id="googleSummary">No due tasks yet.</p>
-              </div>
-            </div>
-            <div id="googleTaskList" class="reminder-list"></div>
-          </section>
-        </section>
-      </section>
-
 
       <section id="tab-voice" class="tab-panel">
         <section class="panel">
           <div class="section-head">
             <div>
               <h2>Voice task</h2>
-              <p>Say a task naturally, review what it found, then create it.</p>
+              <p>Use Android keyboard dictation or browser voice capture, then review and create the task.</p>
             </div>
           </div>
+
+          <section class="voice-steps">
+            <article class="setup-card">
+              <strong>Best option</strong>
+              <p>Tap the text box, tap the microphone on your Android keyboard, speak, then tap Parse.</p>
+            </article>
+
+            <article class="setup-card">
+              <strong>Browser voice</strong>
+              <p>Tap Check mic, then Start browser listening. This depends on Android Chrome support.</p>
+            </article>
+
+            <article class="setup-card">
+              <strong>Review first</strong>
+              <p>The app shows what it found before creating the task.</p>
+            </article>
+          </section>
 
           <section class="notification-card">
             <div>
               <span id="voiceBadge" class="status-badge">Ready</span>
-              <h3 id="voiceStatus">Voice input is ready to check.</h3>
+              <h3 id="voiceStatus">Voice input is ready.</h3>
               <p id="voiceDetails">Example: “I need to have the dishes done by 5pm today.”</p>
             </div>
 
             <div class="notification-actions">
-              <button id="startVoiceBtn" class="primary" type="button">Start listening</button>
+              <button id="focusDictationBtn" class="primary" type="button">Use keyboard mic</button>
+              <button id="checkMicBtn" class="pill" type="button">Check mic</button>
+              <button id="startVoiceBtn" class="pill" type="button">Start browser listening</button>
               <button id="stopVoiceBtn" class="pill" type="button">Stop</button>
-              <button id="parseVoiceBtn" class="pill" type="button">Parse text</button>
             </div>
           </section>
 
           <section class="voice-grid">
             <div class="voice-card">
               <label>
-                Transcript
-                <textarea id="voiceTranscript" placeholder="Your spoken text appears here. You can edit it before creating the task."></textarea>
+                Voice text
+                <textarea id="voiceTranscript" inputmode="text" autocomplete="off" placeholder="Tap here, use the keyboard microphone, or press Start browser listening."></textarea>
               </label>
 
               <div class="preset-strip">
-                <button class="pill" type="button" data-voice-example="I need to have the dishes done by 5pm today">Example 1</button>
-                <button class="pill" type="button" data-voice-example="remind me to call the doctor tomorrow at 9am">Example 2</button>
-                <button class="pill" type="button" data-voice-example="add a high priority work task to send the report by Friday at 3pm">Example 3</button>
+                <button class="pill" type="button" data-voice-example="I need to have the dishes done by 5pm today">Dishes by 5</button>
+                <button class="pill" type="button" data-voice-example="remind me to call the doctor tomorrow at 9am">Doctor tomorrow</button>
+                <button class="pill" type="button" data-voice-example="add a high priority work task to send the report by Friday at 3pm">Report Friday</button>
+              </div>
+
+              <div class="form-actions">
+                <button id="parseVoiceBtn" class="primary" type="button">Parse task</button>
+                <button id="clearVoiceBtn" class="pill" type="button">Clear</button>
               </div>
             </div>
 
@@ -514,8 +474,13 @@
           </section>
 
           <section class="help-box">
+            <h3>Voice status log</h3>
+            <p id="voiceDebugLog">No voice actions yet.</p>
+          </section>
+
+          <section class="help-box">
             <h3>Voice tips</h3>
-            <p>Try phrases like “do the dishes by 5pm today,” “call mom tomorrow at 9am,” “high priority work task to send the report Friday at 3pm,” or “daily task to check game rewards.”</p>
+            <p>Try: “do the dishes by 5pm today,” “call mom tomorrow at 9am,” “high priority work task to send the report Friday at 3pm,” or “daily task to check game rewards.”</p>
           </section>
         </section>
       </section>

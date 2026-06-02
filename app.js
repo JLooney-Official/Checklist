@@ -1,4 +1,4 @@
-const APP_VERSION = "5.3";
+const APP_VERSION = "5.4";
 const APP_BUILD = "2026-06-01";
 const STORAGE_KEY = "privateChecklist.tasks.v5";
 const SETTINGS_KEY = "privateChecklist.settings.v5";
@@ -48,7 +48,6 @@ const els = {
   versionLabel: $("#versionLabel"),
   installBtn: $("#installBtn"),
   jumpReminders: $("#jumpRemindersBtn"),
-  jumpGoogle: $("#jumpGoogleBtn"),
   jumpVoice: $("#jumpVoiceBtn"),
   jumpSettings: $("#jumpSettingsBtn"),
 
@@ -107,17 +106,15 @@ const els = {
   upcomingReminderList: $("#upcomingReminderList"),
   reminderSummary: $("#reminderSummary"),
 
-  googleTaskList: $("#googleTaskList"),
-  googleSummary: $("#googleSummary"),
-  googleViewDueTasks: $("#googleViewDueTasksBtn"),
-  downloadVisibleIcs: $("#downloadVisibleIcsBtn"),
-
   voiceBadge: $("#voiceBadge"),
   voiceStatus: $("#voiceStatus"),
   voiceDetails: $("#voiceDetails"),
+  focusDictation: $("#focusDictationBtn"),
+  checkMic: $("#checkMicBtn"),
   startVoice: $("#startVoiceBtn"),
   stopVoice: $("#stopVoiceBtn"),
   parseVoice: $("#parseVoiceBtn"),
+  clearVoice: $("#clearVoiceBtn"),
   voiceTranscript: $("#voiceTranscript"),
   voicePreviewTitle: $("#voicePreviewTitle"),
   voicePreviewDue: $("#voicePreviewDue"),
@@ -127,6 +124,7 @@ const els = {
   voicePreviewReminder: $("#voicePreviewReminder"),
   createVoiceTask: $("#createVoiceTaskBtn"),
   sendVoiceToAdd: $("#sendVoiceToAddBtn"),
+  voiceDebugLog: $("#voiceDebugLog"),
 
   settingsForm: $("#settingsForm"),
   settingTitle: $("#settingTitle"),
@@ -192,11 +190,15 @@ $$(".tab-btn").forEach(button => {
 });
 
 
+els.focusDictation.addEventListener("click", focusDictationBox);
+els.checkMic.addEventListener("click", checkMicrophoneAccess);
 els.startVoice.addEventListener("click", startVoiceInput);
 els.stopVoice.addEventListener("click", stopVoiceInput);
 els.parseVoice.addEventListener("click", () => parseVoiceTranscript(true));
+els.clearVoice.addEventListener("click", clearVoiceInput);
 els.createVoiceTask.addEventListener("click", createTaskFromVoice);
 els.sendVoiceToAdd.addEventListener("click", sendVoiceToAddForm);
+els.voiceTranscript.addEventListener("input", () => parseVoiceTranscript(false));
 
 $$("[data-voice-example]").forEach(button => {
   button.addEventListener("click", () => {
@@ -206,7 +208,6 @@ $$("[data-voice-example]").forEach(button => {
 });
 
 els.jumpReminders.addEventListener("click", () => showTab("reminders"));
-els.jumpGoogle.addEventListener("click", () => showTab("google"));
 els.jumpVoice.addEventListener("click", () => showTab("voice"));
 els.jumpSettings.addEventListener("click", () => showTab("settings"));
 
@@ -299,22 +300,6 @@ els.checkNow.addEventListener("click", () => {
   renderReminders();
   showToast("Reminder check complete.");
 });
-els.googleViewDueTasks.addEventListener("click", () => {
-  els.status.value = "upcoming";
-  updateActiveViewChip();
-  showTab("tasks");
-  render();
-});
-
-els.downloadVisibleIcs.addEventListener("click", () => {
-  const visible = getVisibleTasks().filter(task => task.due);
-  if (!visible.length) {
-    showToast("No visible due tasks to export.");
-    return;
-  }
-  downloadIcsFile(visible, "private-checklist-visible.ics");
-});
-
 els.showReminderTasks.addEventListener("click", () => {
   els.status.value = "reminders";
   updateActiveViewChip();
@@ -409,7 +394,6 @@ function showTab(tabName) {
     updateNotificationUI();
     renderReminders();
   }
-  if (tabName === "google") renderGooglePanel();
   if (tabName === "voice") updateVoiceSupportUI();
   if (tabName === "settings") fillSettingsForm();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -660,7 +644,6 @@ function render() {
   updateNotificationUI();
   renderTasks();
   renderReminders();
-  renderGooglePanel();
 }
 
 function renderTasks() {
@@ -772,9 +755,6 @@ function renderTask(task) {
     actionButton(task.pinned ? "Unpin" : "Pin", () => toggleField(task.id, "pinned")),
     actionButton(task.important ? "Unmark" : "Important", () => toggleField(task.id, "important")),
     actionButton("+1 day", () => snoozeTask(task.id)),
-    actionButton("Calendar", () => openGoogleCalendarTask(task.id)),
-    actionButton(".ics", () => downloadTaskIcs(task.id)),
-    actionButton("Email", () => emailTask(task.id)),
     actionButton("↑", () => moveTask(task.id, -1)),
     actionButton("↓", () => moveTask(task.id, 1)),
     actionButton("Copy", () => duplicateTask(task.id)),
@@ -1398,21 +1378,31 @@ async function shareChecklistText() {
 
 
 function updateVoiceSupportUI() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
   if (!els.voiceBadge) return;
 
-  if (!SpeechRecognition) {
-    setVoiceState("bad", "Unsupported", "Voice input is not supported in this browser.", "Use Android Chrome with the hosted HTTPS app link, or type/paste text into the transcript box.");
-    return;
-  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const hasMicApi = Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 
   if (!window.isSecureContext) {
-    setVoiceState("bad", "Needs HTTPS", "Voice input needs the secure hosted app link.", "Open your GitHub Pages URL instead of opening index.html directly.");
+    setVoiceState("bad", "Needs HTTPS", "Voice tools need the secure hosted app link.", "Open your GitHub Pages URL instead of opening index.html directly.");
+    voiceLog("Secure context check failed. Open the hosted HTTPS app link.");
     return;
   }
 
-  setVoiceState("good", "Ready", "Voice input is ready.", "Tap Start listening, say the task, then review the preview.");
+  if (!SpeechRecognition && !hasMicApi) {
+    setVoiceState("warn", "Keyboard mic", "Browser listening is not available here.", "Use the Android keyboard microphone in the text box, then tap Parse task.");
+    voiceLog("Browser SpeechRecognition not found. Keyboard dictation mode is still usable.");
+    return;
+  }
+
+  if (!SpeechRecognition) {
+    setVoiceState("warn", "Keyboard mic", "Browser listening may not be supported.", "Use the keyboard microphone for reliable dictation, or try Check mic first.");
+    voiceLog("SpeechRecognition API not found. Keyboard dictation mode recommended.");
+    return;
+  }
+
+  setVoiceState("good", "Ready", "Voice tools are ready.", "For best results, use the keyboard microphone. Browser listening is available as an extra option.");
+  voiceLog("Voice tab ready.");
 }
 
 function setVoiceState(kind, badge, status, details) {
@@ -1423,15 +1413,63 @@ function setVoiceState(kind, badge, status, details) {
   els.voiceDetails.textContent = details;
 }
 
-function startVoiceInput() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+function voiceLog(message) {
+  if (!els.voiceDebugLog) return;
+  const stamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  els.voiceDebugLog.textContent = `[${stamp}] ${message}`;
+}
 
-  if (!SpeechRecognition) {
-    updateVoiceSupportUI();
-    return;
+function focusDictationBox() {
+  showTab("voice");
+  els.voiceTranscript.focus();
+  setVoiceState("good", "Keyboard mic", "Text box focused.", "Tap the microphone on your Android keyboard, speak the task, then tap Parse task.");
+  voiceLog("Focused transcript box. Use the keyboard microphone if it appears.");
+}
+
+async function checkMicrophoneAccess() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setVoiceState("warn", "No mic check", "This browser cannot run the microphone permission check.", "Use Android keyboard dictation in the text box.");
+    voiceLog("navigator.mediaDevices.getUserMedia is unavailable.");
+    return false;
   }
 
   try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    for (const track of stream.getTracks()) track.stop();
+    setVoiceState("good", "Mic allowed", "Microphone permission is working.", "You can try Start browser listening, or use the keyboard microphone.");
+    voiceLog("Microphone permission check passed.");
+    return true;
+  } catch (error) {
+    const detail = error && error.name ? error.name : "Microphone permission failed.";
+    setVoiceState("bad", "Mic blocked", "Microphone permission is blocked or unavailable.", detail);
+    voiceLog(`Microphone check failed: ${detail}`);
+    return false;
+  }
+}
+
+async function startVoiceInput() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    setVoiceState("warn", "Keyboard mic", "Browser listening is not supported here.", "Tap Use keyboard mic, then use your Android keyboard microphone.");
+    voiceLog("SpeechRecognition API not available.");
+    return;
+  }
+
+  if (!window.isSecureContext) {
+    setVoiceState("bad", "Needs HTTPS", "Browser listening needs HTTPS.", "Open your hosted GitHub Pages link.");
+    voiceLog("Browser listening blocked because page is not secure.");
+    return;
+  }
+
+  await checkMicrophoneAccess();
+
+  try {
+    if (recognition) {
+      recognition.stop();
+      recognition = null;
+    }
+
     recognition = new SpeechRecognition();
     recognition.lang = "en-US";
     recognition.interimResults = true;
@@ -1441,8 +1479,14 @@ function startVoiceInput() {
     let finalTranscript = "";
 
     recognition.onstart = () => {
-      setVoiceState("warn", "Listening", "Listening now...", "Speak naturally. The transcript will appear below.");
+      setVoiceState("warn", "Listening", "Listening now...", "Speak right after tapping Start. Android may stop listening quickly if it hears silence.");
+      voiceLog("Browser SpeechRecognition started.");
     };
+
+    recognition.onaudiostart = () => voiceLog("Audio capture started.");
+    recognition.onspeechstart = () => voiceLog("Speech detected.");
+    recognition.onspeechend = () => voiceLog("Speech ended.");
+    recognition.onaudioend = () => voiceLog("Audio capture ended.");
 
     recognition.onresult = event => {
       let interim = "";
@@ -1454,20 +1498,35 @@ function startVoiceInput() {
 
       els.voiceTranscript.value = (finalTranscript + interim).trim();
       parseVoiceTranscript(false);
+      voiceLog(`Transcript updated: ${els.voiceTranscript.value || "(empty)"}`);
     };
 
     recognition.onerror = event => {
-      setVoiceState("bad", "Error", "Voice input stopped.", event.error || "Unknown voice error.");
+      const error = event.error || "unknown";
+      setVoiceState("bad", "Voice error", "Browser listening stopped.", `Error: ${error}. Try keyboard mic mode if this keeps happening.`);
+      voiceLog(`SpeechRecognition error: ${error}`);
+    };
+
+    recognition.onnomatch = () => {
+      setVoiceState("warn", "No match", "No speech was recognized.", "Try again, speak immediately after tapping Start, or use keyboard mic mode.");
+      voiceLog("SpeechRecognition returned no match.");
     };
 
     recognition.onend = () => {
       parseVoiceTranscript(true);
-      setVoiceState("good", "Ready", "Voice capture finished.", "Review the preview, then tap Create task.");
+      if (els.voiceTranscript.value.trim()) {
+        setVoiceState("good", "Captured", "Voice capture finished.", "Review the preview, then tap Create task.");
+      } else {
+        setVoiceState("warn", "No text", "Listening ended without text.", "Try keyboard mic mode. It is usually more reliable on Android.");
+      }
+      voiceLog("Browser SpeechRecognition ended.");
+      recognition = null;
     };
 
     recognition.start();
   } catch (error) {
-    setVoiceState("bad", "Error", "Could not start voice input.", error.message || "Try again.");
+    setVoiceState("bad", "Start failed", "Could not start browser listening.", error.message || "Try keyboard mic mode.");
+    voiceLog(`SpeechRecognition start failed: ${error.message || error}`);
   }
 }
 
@@ -1475,8 +1534,19 @@ function stopVoiceInput() {
   if (recognition) {
     recognition.stop();
     recognition = null;
+    voiceLog("Browser listening stopped by user.");
+  } else {
+    voiceLog("Stop pressed, but browser listening was not active.");
   }
   parseVoiceTranscript(true);
+}
+
+function clearVoiceInput() {
+  els.voiceTranscript.value = "";
+  lastVoiceTask = null;
+  updateVoicePreview(null);
+  setVoiceState("good", "Ready", "Voice text cleared.", "Use keyboard mic or browser listening to add new text.");
+  voiceLog("Voice text cleared.");
 }
 
 function parseVoiceTranscript(showToastMessage = false) {
@@ -1576,10 +1646,10 @@ function parseNaturalTask(input) {
   if (/\b(urgent|asap|right away|immediately)\b/.test(text)) priority = "urgent";
   else if (/\b(high priority|important)\b/.test(text)) priority = "high";
 
-  if (/\b(work|job)\b/.test(text)) category = "Work";
-  else if (/\b(home|house|chore|chores|dishes|laundry|trash)\b/.test(text)) category = "Home";
+  if (/\b(work|job|report|email|meeting)\b/.test(text)) category = "Work";
+  else if (/\b(home|house|chore|chores|dishes|dishwasher|laundry|trash|clean|vacuum)\b/.test(text)) category = "Home";
   else if (/\b(game|gaming|daily rewards|guild|alliance)\b/.test(text)) category = "Gaming";
-  else if (/\b(errand|store|pickup|pick up|shopping)\b/.test(text)) category = "Errands";
+  else if (/\b(errand|store|pickup|pick up|shopping|groceries)\b/.test(text)) category = "Errands";
 
   if (/\b(every day|daily)\b/.test(text)) repeat = "daily";
   else if (/\b(every week|weekly)\b/.test(text)) repeat = "weekly";
@@ -1604,8 +1674,8 @@ function parseNaturalTask(input) {
   }
 
   title = title
-    .replace(/\bby\s+(noon|midnight|\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/g, "")
-    .replace(/\bat\s+(noon|midnight|\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/g, "")
+    .replace(/\bby\s+(noon|midnight|\d{1,2}(?::\d{2})?\s*(?:a\s*m|p\s*m|am|pm)?)\b/g, "")
+    .replace(/\bat\s+(noon|midnight|\d{1,2}(?::\d{2})?\s*(?:a\s*m|p\s*m|am|pm)?)\b/g, "")
     .replace(/\b(today|tomorrow|tonight|this morning|this afternoon|this evening|next week)\b/g, "")
     .replace(/\b(on|by|this|next)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/g, "")
     .replace(/\bin\s+\d+\s+(minutes?|mins?|hours?|hrs?|days?)\b/g, "")
@@ -1636,7 +1706,7 @@ function parseNaturalTask(input) {
 function cleanSpokenTitle(text) {
   return text
     .replace(/^(hey|okay|ok|um|uh|so|please)\s+/g, "")
-    .replace(/\b(hey|um|uh|please)\b/g, "")
+    .replace(/\b(hey|um|uh|please|like)\b/g, "")
     .replace(/\b(i need to|i need|need to|i gotta|i have to|gotta|remind me to|remind me|add a task to|add task to|add task|create a task to|create task to|make a task to|set a reminder to|set reminder to)\b/g, "")
     .replace(/\bfor me\b/g, "")
     .replace(/\s+/g, " ")
@@ -1690,12 +1760,12 @@ function parseSpokenTime(text) {
     return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
   }
 
-  const match = text.match(/\b(?:by|at|around|before)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/);
+  const match = text.match(/\b(?:by|at|around|before)\s+(\d{1,2})(?::(\d{2}))?\s*(a\s*m|p\s*m|am|pm)?\b/);
   if (!match) return "";
 
   let hour = Number(match[1]);
   const minute = match[2] ? Number(match[2]) : 0;
-  const meridiem = match[3];
+  const meridiem = match[3] ? match[3].replace(/\s+/g, "") : "";
 
   if (meridiem === "pm" && hour < 12) hour += 12;
   if (meridiem === "am" && hour === 12) hour = 0;
@@ -1713,251 +1783,6 @@ function addDaysIso(days) {
   return toIsoDate(date);
 }
 
-
-function renderGooglePanel() {
-  if (!els.googleTaskList || !els.googleSummary) return;
-
-  const dueTasks = tasks
-    .filter(task => !task.done && task.due)
-    .sort((a, b) => {
-      const aDate = a.time ? parseTaskDateTime(a) : parseLocalDate(a.due);
-      const bDate = b.time ? parseTaskDateTime(b) : parseLocalDate(b.due);
-      return aDate - bDate;
-    });
-
-  els.googleTaskList.innerHTML = "";
-  els.googleSummary.textContent = dueTasks.length
-    ? `${dueTasks.length} due ${dueTasks.length === 1 ? "task" : "tasks"} can be sent to Google.`
-    : "No due tasks yet.";
-
-  if (!dueTasks.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.innerHTML = "<h3>No due tasks yet</h3><p>Add a due date to a task, then it will appear here.</p>";
-    els.googleTaskList.appendChild(empty);
-    return;
-  }
-
-  for (const task of dueTasks) {
-    const card = document.createElement("article");
-    card.className = "reminder-card";
-
-    const left = document.createElement("div");
-    const title = document.createElement("h3");
-    title.className = "reminder-title";
-    title.textContent = task.title;
-
-    const meta = document.createElement("p");
-    meta.className = "reminder-meta";
-    meta.textContent = metaLine(task) || dueLabel(task);
-
-    const note = document.createElement("p");
-    note.className = "google-note";
-    note.textContent = "Choose Calendar for a Google event draft, .ics for a calendar file, or Email for a message draft.";
-
-    left.append(title, meta, note);
-
-    const actions = document.createElement("div");
-    actions.className = "calendar-actions";
-    actions.append(
-      actionButton("Calendar", () => openGoogleCalendarTask(task.id)),
-      actionButton(".ics", () => downloadTaskIcs(task.id)),
-      actionButton("Email", () => emailTask(task.id)),
-      actionButton("Edit", () => openEdit(task.id))
-    );
-
-    card.append(left, actions);
-    els.googleTaskList.appendChild(card);
-  }
-}
-
-function openGoogleCalendarTask(id) {
-  const task = tasks.find(item => item.id === id);
-  if (!task) return;
-
-  if (!task.due) {
-    showToast("Add a due date before sending this task to Calendar.");
-    return;
-  }
-
-  window.open(googleCalendarUrl(task), "_blank", "noopener,noreferrer");
-}
-
-function googleCalendarUrl(task) {
-  const { start, end, allDay } = calendarRange(task);
-  const params = new URLSearchParams();
-  params.set("action", "TEMPLATE");
-  params.set("text", task.title || "Checklist task");
-  params.set("details", googleDetails(task));
-
-  if (allDay) {
-    params.set("dates", `${yyyymmdd(start)}/${yyyymmdd(end)}`);
-  } else {
-    params.set("dates", `${googleDateTime(start)}/${googleDateTime(end)}`);
-    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (zone) params.set("ctz", zone);
-  }
-
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
-}
-
-function googleDetails(task) {
-  const lines = [];
-  if (task.notes) lines.push(task.notes);
-  if (task.category) lines.push(`List: ${task.category}`);
-  if (task.priority) lines.push(`Priority: ${task.priority}`);
-  if (task.energy && task.energy !== "normal") lines.push(`Energy: ${task.energy}`);
-  if (task.tags && task.tags.length) lines.push(`Tags: ${task.tags.map(tag => `#${tag}`).join(" ")}`);
-  if (task.subtasks && task.subtasks.length) {
-    lines.push("");
-    lines.push("Steps:");
-    for (const step of task.subtasks) lines.push(`${step.done ? "✓" : "☐"} ${step.text}`);
-  }
-  lines.push("");
-  lines.push("Created in Private Checklist.");
-  return lines.join("\n");
-}
-
-function downloadTaskIcs(id) {
-  const task = tasks.find(item => item.id === id);
-  if (!task) return;
-
-  if (!task.due) {
-    showToast("Add a due date before exporting this task.");
-    return;
-  }
-
-  downloadIcsFile([task], safeFileName(task.title || "checklist-task") + ".ics");
-}
-
-function downloadIcsFile(taskList, filename) {
-  const ics = icsFromTasks(taskList);
-  downloadTextFile(ics, filename, "text/calendar;charset=utf-8");
-  showToast("Calendar file downloaded.");
-}
-
-function icsFromTasks(taskList) {
-  return [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Private Checklist//Calendar Export//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    ...taskList.map(icsEvent),
-    "END:VCALENDAR"
-  ].join("\r\n");
-}
-
-function icsEvent(task) {
-  const { start, end, allDay } = calendarRange(task);
-  const lines = [
-    "BEGIN:VEVENT",
-    `UID:${icsEscape(task.id || makeId())}@private-checklist`,
-    `DTSTAMP:${utcIcsDateTime(new Date())}`,
-    `SUMMARY:${icsEscape(task.title || "Checklist task")}`,
-    `DESCRIPTION:${icsEscape(googleDetails(task))}`,
-    `CATEGORIES:${icsEscape(task.category || "Checklist")}`
-  ];
-
-  if (allDay) {
-    lines.push(`DTSTART;VALUE=DATE:${yyyymmdd(start)}`);
-    lines.push(`DTEND;VALUE=DATE:${yyyymmdd(end)}`);
-  } else {
-    lines.push(`DTSTART:${utcIcsDateTime(start)}`);
-    lines.push(`DTEND:${utcIcsDateTime(end)}`);
-  }
-
-  if (task.reminder !== "off") {
-    lines.push("BEGIN:VALARM");
-    lines.push(`TRIGGER:-PT${Number(task.reminder) || 0}M`);
-    lines.push("ACTION:DISPLAY");
-    lines.push(`DESCRIPTION:${icsEscape(task.title || "Checklist reminder")}`);
-    lines.push("END:VALARM");
-  }
-
-  lines.push("END:VEVENT");
-  return lines.join("\r\n");
-}
-
-function calendarRange(task) {
-  if (!task.due) {
-    const start = new Date();
-    const end = new Date(start.getTime() + 30 * 60000);
-    return { start, end, allDay: false };
-  }
-
-  if (!task.time) {
-    const start = parseLocalDate(task.due);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    return { start, end, allDay: true };
-  }
-
-  const start = parseTaskDateTime(task);
-  const end = new Date(start.getTime() + 30 * 60000);
-  return { start, end, allDay: false };
-}
-
-function emailTask(id) {
-  const task = tasks.find(item => item.id === id);
-  if (!task) return;
-
-  const subject = `Reminder: ${task.title}`;
-  const body = googleDetails(task);
-  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}
-
-function googleDateTime(date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-    "T",
-    String(date.getHours()).padStart(2, "0"),
-    String(date.getMinutes()).padStart(2, "0"),
-    "00"
-  ].join("");
-}
-
-function utcIcsDateTime(date) {
-  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-}
-
-function yyyymmdd(date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0")
-  ].join("");
-}
-
-function icsEscape(value) {
-  return String(value || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/;/g, "\\;")
-    .replace(/,/g, "\\,")
-    .replace(/\r?\n/g, "\\n");
-}
-
-function safeFileName(value) {
-  return String(value || "checklist-task")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 60) || "checklist-task";
-}
-
-function downloadTextFile(text, filename, type) {
-  const blob = new Blob([text], { type });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
-}
 
 function makeBadge(text, variant = "") {
   const span = document.createElement("span");
