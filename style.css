@@ -132,7 +132,7 @@ h1 {
   top: 0;
   z-index: 5;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 8px;
   padding: 8px;
   margin-bottom: 12px;
@@ -795,5 +795,69 @@ dialog::backdrop {
   .progress-row {
     flex-direction: column;
     gap: 4px;
+  }
+}
+
+
+.calendar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.google-note {
+  color: var(--muted);
+  margin: 0;
+  font-size: .88rem;
+}
+
+
+
+.voice-grid {
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 12px;
+}
+
+.voice-card {
+  padding: 14px;
+  border-radius: 20px;
+  background: rgba(2, 6, 23, .43);
+  border: 1px solid var(--border);
+}
+
+.voice-card textarea {
+  min-height: 190px;
+}
+
+.preview-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.preview-list div {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.preview-list dt {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.preview-list dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 850;
+}
+
+@media (max-width: 840px) {
+  .voice-grid {
+    grid-template-columns: 1fr;
   }
 }

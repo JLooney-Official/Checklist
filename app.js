@@ -1,4 +1,4 @@
-const APP_VERSION = "5.0";
+const APP_VERSION = "5.3";
 const APP_BUILD = "2026-06-01";
 const STORAGE_KEY = "privateChecklist.tasks.v5";
 const SETTINGS_KEY = "privateChecklist.settings.v5";
@@ -37,6 +37,8 @@ const templates = {
 let tasks = loadTasks();
 let settings = loadSettings();
 let deferredPrompt = null;
+let recognition = null;
+let lastVoiceTask = null;
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -46,6 +48,8 @@ const els = {
   versionLabel: $("#versionLabel"),
   installBtn: $("#installBtn"),
   jumpReminders: $("#jumpRemindersBtn"),
+  jumpGoogle: $("#jumpGoogleBtn"),
+  jumpVoice: $("#jumpVoiceBtn"),
   jumpSettings: $("#jumpSettingsBtn"),
 
   taskForm: $("#taskForm"),
@@ -103,6 +107,27 @@ const els = {
   upcomingReminderList: $("#upcomingReminderList"),
   reminderSummary: $("#reminderSummary"),
 
+  googleTaskList: $("#googleTaskList"),
+  googleSummary: $("#googleSummary"),
+  googleViewDueTasks: $("#googleViewDueTasksBtn"),
+  downloadVisibleIcs: $("#downloadVisibleIcsBtn"),
+
+  voiceBadge: $("#voiceBadge"),
+  voiceStatus: $("#voiceStatus"),
+  voiceDetails: $("#voiceDetails"),
+  startVoice: $("#startVoiceBtn"),
+  stopVoice: $("#stopVoiceBtn"),
+  parseVoice: $("#parseVoiceBtn"),
+  voiceTranscript: $("#voiceTranscript"),
+  voicePreviewTitle: $("#voicePreviewTitle"),
+  voicePreviewDue: $("#voicePreviewDue"),
+  voicePreviewTime: $("#voicePreviewTime"),
+  voicePreviewCategory: $("#voicePreviewCategory"),
+  voicePreviewPriority: $("#voicePreviewPriority"),
+  voicePreviewReminder: $("#voicePreviewReminder"),
+  createVoiceTask: $("#createVoiceTaskBtn"),
+  sendVoiceToAdd: $("#sendVoiceToAddBtn"),
+
   settingsForm: $("#settingsForm"),
   settingTitle: $("#settingTitle"),
   settingTheme: $("#settingTheme"),
@@ -139,6 +164,7 @@ applySettings();
 autoResetRecurringIfNeeded();
 render();
 updateNotificationUI();
+updateVoiceSupportUI();
 startReminderLoop();
 
 if ("serviceWorker" in navigator) {
@@ -165,7 +191,23 @@ $$(".tab-btn").forEach(button => {
   button.addEventListener("click", () => showTab(button.dataset.tab));
 });
 
+
+els.startVoice.addEventListener("click", startVoiceInput);
+els.stopVoice.addEventListener("click", stopVoiceInput);
+els.parseVoice.addEventListener("click", () => parseVoiceTranscript(true));
+els.createVoiceTask.addEventListener("click", createTaskFromVoice);
+els.sendVoiceToAdd.addEventListener("click", sendVoiceToAddForm);
+
+$$("[data-voice-example]").forEach(button => {
+  button.addEventListener("click", () => {
+    els.voiceTranscript.value = button.dataset.voiceExample;
+    parseVoiceTranscript(true);
+  });
+});
+
 els.jumpReminders.addEventListener("click", () => showTab("reminders"));
+els.jumpGoogle.addEventListener("click", () => showTab("google"));
+els.jumpVoice.addEventListener("click", () => showTab("voice"));
 els.jumpSettings.addEventListener("click", () => showTab("settings"));
 
 $$(".view-chip").forEach(chip => {
@@ -257,6 +299,22 @@ els.checkNow.addEventListener("click", () => {
   renderReminders();
   showToast("Reminder check complete.");
 });
+els.googleViewDueTasks.addEventListener("click", () => {
+  els.status.value = "upcoming";
+  updateActiveViewChip();
+  showTab("tasks");
+  render();
+});
+
+els.downloadVisibleIcs.addEventListener("click", () => {
+  const visible = getVisibleTasks().filter(task => task.due);
+  if (!visible.length) {
+    showToast("No visible due tasks to export.");
+    return;
+  }
+  downloadIcsFile(visible, "private-checklist-visible.ics");
+});
+
 els.showReminderTasks.addEventListener("click", () => {
   els.status.value = "reminders";
   updateActiveViewChip();
@@ -351,6 +409,8 @@ function showTab(tabName) {
     updateNotificationUI();
     renderReminders();
   }
+  if (tabName === "google") renderGooglePanel();
+  if (tabName === "voice") updateVoiceSupportUI();
   if (tabName === "settings") fillSettingsForm();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -600,6 +660,7 @@ function render() {
   updateNotificationUI();
   renderTasks();
   renderReminders();
+  renderGooglePanel();
 }
 
 function renderTasks() {
@@ -711,6 +772,9 @@ function renderTask(task) {
     actionButton(task.pinned ? "Unpin" : "Pin", () => toggleField(task.id, "pinned")),
     actionButton(task.important ? "Unmark" : "Important", () => toggleField(task.id, "important")),
     actionButton("+1 day", () => snoozeTask(task.id)),
+    actionButton("Calendar", () => openGoogleCalendarTask(task.id)),
+    actionButton(".ics", () => downloadTaskIcs(task.id)),
+    actionButton("Email", () => emailTask(task.id)),
     actionButton("↑", () => moveTask(task.id, -1)),
     actionButton("↓", () => moveTask(task.id, 1)),
     actionButton("Copy", () => duplicateTask(task.id)),
@@ -1327,6 +1391,572 @@ async function shareChecklistText() {
 
   await navigator.clipboard.writeText(text);
   showToast("Checklist copied to clipboard.");
+}
+
+
+
+
+
+function updateVoiceSupportUI() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!els.voiceBadge) return;
+
+  if (!SpeechRecognition) {
+    setVoiceState("bad", "Unsupported", "Voice input is not supported in this browser.", "Use Android Chrome with the hosted HTTPS app link, or type/paste text into the transcript box.");
+    return;
+  }
+
+  if (!window.isSecureContext) {
+    setVoiceState("bad", "Needs HTTPS", "Voice input needs the secure hosted app link.", "Open your GitHub Pages URL instead of opening index.html directly.");
+    return;
+  }
+
+  setVoiceState("good", "Ready", "Voice input is ready.", "Tap Start listening, say the task, then review the preview.");
+}
+
+function setVoiceState(kind, badge, status, details) {
+  if (!els.voiceBadge) return;
+  els.voiceBadge.className = `status-badge ${kind}`;
+  els.voiceBadge.textContent = badge;
+  els.voiceStatus.textContent = status;
+  els.voiceDetails.textContent = details;
+}
+
+function startVoiceInput() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    updateVoiceSupportUI();
+    return;
+  }
+
+  try {
+    recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    let finalTranscript = "";
+
+    recognition.onstart = () => {
+      setVoiceState("warn", "Listening", "Listening now...", "Speak naturally. The transcript will appear below.");
+    };
+
+    recognition.onresult = event => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const text = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += text + " ";
+        else interim += text;
+      }
+
+      els.voiceTranscript.value = (finalTranscript + interim).trim();
+      parseVoiceTranscript(false);
+    };
+
+    recognition.onerror = event => {
+      setVoiceState("bad", "Error", "Voice input stopped.", event.error || "Unknown voice error.");
+    };
+
+    recognition.onend = () => {
+      parseVoiceTranscript(true);
+      setVoiceState("good", "Ready", "Voice capture finished.", "Review the preview, then tap Create task.");
+    };
+
+    recognition.start();
+  } catch (error) {
+    setVoiceState("bad", "Error", "Could not start voice input.", error.message || "Try again.");
+  }
+}
+
+function stopVoiceInput() {
+  if (recognition) {
+    recognition.stop();
+    recognition = null;
+  }
+  parseVoiceTranscript(true);
+}
+
+function parseVoiceTranscript(showToastMessage = false) {
+  const text = els.voiceTranscript.value.trim();
+
+  if (!text) {
+    lastVoiceTask = null;
+    updateVoicePreview(null);
+    if (showToastMessage) showToast("No voice text to parse yet.");
+    return;
+  }
+
+  lastVoiceTask = parseNaturalTask(text);
+  updateVoicePreview(lastVoiceTask);
+
+  if (showToastMessage) {
+    showToast(lastVoiceTask.title ? "Voice text parsed." : "Could not find a task title.");
+  }
+}
+
+function updateVoicePreview(task) {
+  if (!task) {
+    els.voicePreviewTitle.textContent = "—";
+    els.voicePreviewDue.textContent = "—";
+    els.voicePreviewTime.textContent = "—";
+    els.voicePreviewCategory.textContent = "—";
+    els.voicePreviewPriority.textContent = "—";
+    els.voicePreviewReminder.textContent = "—";
+    return;
+  }
+
+  els.voicePreviewTitle.textContent = task.title || "—";
+  els.voicePreviewDue.textContent = task.due || "—";
+  els.voicePreviewTime.textContent = task.time || "—";
+  els.voicePreviewCategory.textContent = task.category || "General";
+  els.voicePreviewPriority.textContent = task.priority || "normal";
+  els.voicePreviewReminder.textContent = task.reminder === "off" ? "No reminder" : reminderLabel(task.reminder);
+}
+
+function createTaskFromVoice() {
+  if (!lastVoiceTask) parseVoiceTranscript(false);
+
+  if (!lastVoiceTask || !lastVoiceTask.title) {
+    showToast("Say or type a task first.");
+    return;
+  }
+
+  addTaskObject(lastVoiceTask);
+  els.voiceTranscript.value = "";
+  lastVoiceTask = null;
+  updateVoicePreview(null);
+  showTab("tasks");
+  showToast("Voice task created.");
+}
+
+function sendVoiceToAddForm() {
+  if (!lastVoiceTask) parseVoiceTranscript(false);
+
+  if (!lastVoiceTask) {
+    showToast("Say or type a task first.");
+    return;
+  }
+
+  els.title.value = lastVoiceTask.title || "";
+  els.notes.value = lastVoiceTask.notes || "";
+  els.category.value = lastVoiceTask.category || settings.defaultCategory;
+  els.priority.value = lastVoiceTask.priority || "normal";
+  els.due.value = lastVoiceTask.due || "";
+  els.time.value = lastVoiceTask.time || "";
+  els.reminder.value = lastVoiceTask.reminder || settings.defaultReminder;
+  els.repeat.value = lastVoiceTask.repeat || "none";
+  els.tags.value = (lastVoiceTask.tags || []).join(", ");
+  els.energy.value = lastVoiceTask.energy || "normal";
+  els.pinned.checked = Boolean(lastVoiceTask.pinned);
+  els.important.checked = Boolean(lastVoiceTask.important);
+
+  showTab("add");
+  showToast("Voice task moved to Add Task.");
+}
+
+function parseNaturalTask(input) {
+  const original = input.trim();
+  let text = original
+    .toLowerCase()
+    .replace(/[.,!?]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  let due = "";
+  let time = "";
+  let priority = "normal";
+  let category = settings.defaultCategory || "General";
+  let repeat = "none";
+  let reminder = settings.defaultReminder || "off";
+  const tags = ["voice"];
+
+  if (/\b(urgent|asap|right away|immediately)\b/.test(text)) priority = "urgent";
+  else if (/\b(high priority|important)\b/.test(text)) priority = "high";
+
+  if (/\b(work|job)\b/.test(text)) category = "Work";
+  else if (/\b(home|house|chore|chores|dishes|laundry|trash)\b/.test(text)) category = "Home";
+  else if (/\b(game|gaming|daily rewards|guild|alliance)\b/.test(text)) category = "Gaming";
+  else if (/\b(errand|store|pickup|pick up|shopping)\b/.test(text)) category = "Errands";
+
+  if (/\b(every day|daily)\b/.test(text)) repeat = "daily";
+  else if (/\b(every week|weekly)\b/.test(text)) repeat = "weekly";
+  else if (/\b(every month|monthly)\b/.test(text)) repeat = "monthly";
+
+  const parsedDate = parseSpokenDate(text);
+  if (parsedDate) due = parsedDate;
+
+  const parsedTime = parseSpokenTime(text);
+  if (parsedTime) time = parsedTime;
+
+  if (!due && /\btonight\b/.test(text)) due = todayIso();
+  if (!time && /\btonight\b/.test(text)) time = "20:00";
+
+  if (time && reminder === "off") reminder = "0";
+
+  let title = cleanSpokenTitle(text);
+
+  const haveDone = title.match(/\bhave\s+(?:the\s+)?(.+?)\s+done\b/);
+  if (haveDone && haveDone[1]) {
+    title = `do the ${haveDone[1].replace(/^the\s+/, "")}`;
+  }
+
+  title = title
+    .replace(/\bby\s+(noon|midnight|\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/g, "")
+    .replace(/\bat\s+(noon|midnight|\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/g, "")
+    .replace(/\b(today|tomorrow|tonight|this morning|this afternoon|this evening|next week)\b/g, "")
+    .replace(/\b(on|by|this|next)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/g, "")
+    .replace(/\bin\s+\d+\s+(minutes?|mins?|hours?|hrs?|days?)\b/g, "")
+    .replace(/\b(high priority|urgent|important|asap|work task|home task|gaming task|errand task)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  title = title || original;
+  title = title.charAt(0).toUpperCase() + title.slice(1);
+
+  return {
+    title,
+    notes: `Created from voice: "${original}"`,
+    category,
+    priority,
+    due,
+    time,
+    reminder,
+    repeat,
+    tags,
+    energy: "normal",
+    subtasks: [],
+    pinned: false,
+    important: priority === "high" || priority === "urgent"
+  };
+}
+
+function cleanSpokenTitle(text) {
+  return text
+    .replace(/^(hey|okay|ok|um|uh|so|please)\s+/g, "")
+    .replace(/\b(hey|um|uh|please)\b/g, "")
+    .replace(/\b(i need to|i need|need to|i gotta|i have to|gotta|remind me to|remind me|add a task to|add task to|add task|create a task to|create task to|make a task to|set a reminder to|set reminder to)\b/g, "")
+    .replace(/\bfor me\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseSpokenDate(text) {
+  if (/\btoday\b/.test(text)) return todayIso();
+  if (/\btomorrow\b/.test(text)) return addDaysIso(1);
+
+  const inDays = text.match(/\bin\s+(\d+)\s+days?\b/);
+  if (inDays) return addDaysIso(Number(inDays[1]));
+
+  const weekdays = {
+    sunday: 0,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6
+  };
+
+  const weekdayMatch = text.match(/\b(?:on\s+|by\s+|this\s+|next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/);
+  if (weekdayMatch) {
+    const target = weekdays[weekdayMatch[1]];
+    const now = new Date();
+    const result = new Date();
+    let diff = target - now.getDay();
+    if (diff <= 0 || text.includes(`next ${weekdayMatch[1]}`)) diff += 7;
+    result.setDate(now.getDate() + diff);
+    return toIsoDate(result);
+  }
+
+  if (/\btonight|this morning|this afternoon|this evening\b/.test(text)) return todayIso();
+
+  return "";
+}
+
+function parseSpokenTime(text) {
+  if (/\bnoon\b/.test(text)) return "12:00";
+  if (/\bmidnight\b/.test(text)) return "00:00";
+
+  const relative = text.match(/\bin\s+(\d+)\s+(minutes?|mins?|hours?|hrs?)\b/);
+  if (relative) {
+    const amount = Number(relative[1]);
+    const unit = relative[2];
+    const date = new Date();
+    if (unit.startsWith("hour") || unit.startsWith("hr")) date.setHours(date.getHours() + amount);
+    else date.setMinutes(date.getMinutes() + amount);
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+
+  const match = text.match(/\b(?:by|at|around|before)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/);
+  if (!match) return "";
+
+  let hour = Number(match[1]);
+  const minute = match[2] ? Number(match[2]) : 0;
+  const meridiem = match[3];
+
+  if (meridiem === "pm" && hour < 12) hour += 12;
+  if (meridiem === "am" && hour === 12) hour = 0;
+
+  if (!meridiem && hour >= 1 && hour <= 7) hour += 12;
+
+  if (hour > 23 || minute > 59) return "";
+
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function addDaysIso(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return toIsoDate(date);
+}
+
+
+function renderGooglePanel() {
+  if (!els.googleTaskList || !els.googleSummary) return;
+
+  const dueTasks = tasks
+    .filter(task => !task.done && task.due)
+    .sort((a, b) => {
+      const aDate = a.time ? parseTaskDateTime(a) : parseLocalDate(a.due);
+      const bDate = b.time ? parseTaskDateTime(b) : parseLocalDate(b.due);
+      return aDate - bDate;
+    });
+
+  els.googleTaskList.innerHTML = "";
+  els.googleSummary.textContent = dueTasks.length
+    ? `${dueTasks.length} due ${dueTasks.length === 1 ? "task" : "tasks"} can be sent to Google.`
+    : "No due tasks yet.";
+
+  if (!dueTasks.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.innerHTML = "<h3>No due tasks yet</h3><p>Add a due date to a task, then it will appear here.</p>";
+    els.googleTaskList.appendChild(empty);
+    return;
+  }
+
+  for (const task of dueTasks) {
+    const card = document.createElement("article");
+    card.className = "reminder-card";
+
+    const left = document.createElement("div");
+    const title = document.createElement("h3");
+    title.className = "reminder-title";
+    title.textContent = task.title;
+
+    const meta = document.createElement("p");
+    meta.className = "reminder-meta";
+    meta.textContent = metaLine(task) || dueLabel(task);
+
+    const note = document.createElement("p");
+    note.className = "google-note";
+    note.textContent = "Choose Calendar for a Google event draft, .ics for a calendar file, or Email for a message draft.";
+
+    left.append(title, meta, note);
+
+    const actions = document.createElement("div");
+    actions.className = "calendar-actions";
+    actions.append(
+      actionButton("Calendar", () => openGoogleCalendarTask(task.id)),
+      actionButton(".ics", () => downloadTaskIcs(task.id)),
+      actionButton("Email", () => emailTask(task.id)),
+      actionButton("Edit", () => openEdit(task.id))
+    );
+
+    card.append(left, actions);
+    els.googleTaskList.appendChild(card);
+  }
+}
+
+function openGoogleCalendarTask(id) {
+  const task = tasks.find(item => item.id === id);
+  if (!task) return;
+
+  if (!task.due) {
+    showToast("Add a due date before sending this task to Calendar.");
+    return;
+  }
+
+  window.open(googleCalendarUrl(task), "_blank", "noopener,noreferrer");
+}
+
+function googleCalendarUrl(task) {
+  const { start, end, allDay } = calendarRange(task);
+  const params = new URLSearchParams();
+  params.set("action", "TEMPLATE");
+  params.set("text", task.title || "Checklist task");
+  params.set("details", googleDetails(task));
+
+  if (allDay) {
+    params.set("dates", `${yyyymmdd(start)}/${yyyymmdd(end)}`);
+  } else {
+    params.set("dates", `${googleDateTime(start)}/${googleDateTime(end)}`);
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (zone) params.set("ctz", zone);
+  }
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function googleDetails(task) {
+  const lines = [];
+  if (task.notes) lines.push(task.notes);
+  if (task.category) lines.push(`List: ${task.category}`);
+  if (task.priority) lines.push(`Priority: ${task.priority}`);
+  if (task.energy && task.energy !== "normal") lines.push(`Energy: ${task.energy}`);
+  if (task.tags && task.tags.length) lines.push(`Tags: ${task.tags.map(tag => `#${tag}`).join(" ")}`);
+  if (task.subtasks && task.subtasks.length) {
+    lines.push("");
+    lines.push("Steps:");
+    for (const step of task.subtasks) lines.push(`${step.done ? "✓" : "☐"} ${step.text}`);
+  }
+  lines.push("");
+  lines.push("Created in Private Checklist.");
+  return lines.join("\n");
+}
+
+function downloadTaskIcs(id) {
+  const task = tasks.find(item => item.id === id);
+  if (!task) return;
+
+  if (!task.due) {
+    showToast("Add a due date before exporting this task.");
+    return;
+  }
+
+  downloadIcsFile([task], safeFileName(task.title || "checklist-task") + ".ics");
+}
+
+function downloadIcsFile(taskList, filename) {
+  const ics = icsFromTasks(taskList);
+  downloadTextFile(ics, filename, "text/calendar;charset=utf-8");
+  showToast("Calendar file downloaded.");
+}
+
+function icsFromTasks(taskList) {
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Private Checklist//Calendar Export//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    ...taskList.map(icsEvent),
+    "END:VCALENDAR"
+  ].join("\r\n");
+}
+
+function icsEvent(task) {
+  const { start, end, allDay } = calendarRange(task);
+  const lines = [
+    "BEGIN:VEVENT",
+    `UID:${icsEscape(task.id || makeId())}@private-checklist`,
+    `DTSTAMP:${utcIcsDateTime(new Date())}`,
+    `SUMMARY:${icsEscape(task.title || "Checklist task")}`,
+    `DESCRIPTION:${icsEscape(googleDetails(task))}`,
+    `CATEGORIES:${icsEscape(task.category || "Checklist")}`
+  ];
+
+  if (allDay) {
+    lines.push(`DTSTART;VALUE=DATE:${yyyymmdd(start)}`);
+    lines.push(`DTEND;VALUE=DATE:${yyyymmdd(end)}`);
+  } else {
+    lines.push(`DTSTART:${utcIcsDateTime(start)}`);
+    lines.push(`DTEND:${utcIcsDateTime(end)}`);
+  }
+
+  if (task.reminder !== "off") {
+    lines.push("BEGIN:VALARM");
+    lines.push(`TRIGGER:-PT${Number(task.reminder) || 0}M`);
+    lines.push("ACTION:DISPLAY");
+    lines.push(`DESCRIPTION:${icsEscape(task.title || "Checklist reminder")}`);
+    lines.push("END:VALARM");
+  }
+
+  lines.push("END:VEVENT");
+  return lines.join("\r\n");
+}
+
+function calendarRange(task) {
+  if (!task.due) {
+    const start = new Date();
+    const end = new Date(start.getTime() + 30 * 60000);
+    return { start, end, allDay: false };
+  }
+
+  if (!task.time) {
+    const start = parseLocalDate(task.due);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return { start, end, allDay: true };
+  }
+
+  const start = parseTaskDateTime(task);
+  const end = new Date(start.getTime() + 30 * 60000);
+  return { start, end, allDay: false };
+}
+
+function emailTask(id) {
+  const task = tasks.find(item => item.id === id);
+  if (!task) return;
+
+  const subject = `Reminder: ${task.title}`;
+  const body = googleDetails(task);
+  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function googleDateTime(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+    "T",
+    String(date.getHours()).padStart(2, "0"),
+    String(date.getMinutes()).padStart(2, "0"),
+    "00"
+  ].join("");
+}
+
+function utcIcsDateTime(date) {
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
+function yyyymmdd(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("");
+}
+
+function icsEscape(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
+}
+
+function safeFileName(value) {
+  return String(value || "checklist-task")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 60) || "checklist-task";
+}
+
+function downloadTextFile(text, filename, type) {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 function makeBadge(text, variant = "") {
