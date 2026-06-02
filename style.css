@@ -589,6 +589,25 @@ textarea:focus {
   background: rgba(251,113,133,.18);
 }
 
+
+.debug-box {
+  margin: 0 0 14px;
+  padding: 13px 14px;
+  border-radius: 18px;
+  background: rgba(2,6,23,.55);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.debug-box strong {
+  color: var(--text);
+  font-family: inherit;
+}
+
 .setup-grid,
 .template-grid {
   display: grid;

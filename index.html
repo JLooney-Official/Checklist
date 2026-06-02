@@ -270,7 +270,7 @@
           <div class="section-head">
             <div>
               <h2>Reminders & notifications</h2>
-              <p>Set up notifications, test them, and see upcoming reminder tasks.</p>
+              <p>Set up notifications, run a live test, and see upcoming reminder tasks.</p>
             </div>
           </div>
 
@@ -284,9 +284,12 @@
             <div class="notification-actions">
               <button id="requestNotifyBtn" class="primary" type="button">Enable notifications</button>
               <button id="testNotifyBtn" class="pill" type="button">Send test</button>
+              <button id="runNotifyCheckBtn" class="pill" type="button">Run full check</button>
               <button id="createTestReminderBtn" class="pill" type="button">Create 1-min test</button>
             </div>
           </section>
+
+          <section id="notificationDebug" class="debug-box hidden"></section>
 
           <section class="setup-grid">
             <article class="setup-card">
@@ -296,7 +299,7 @@
 
             <article class="setup-card">
               <strong>2. Test</strong>
-              <p>Tap Send test. You should see a phone notification almost immediately.</p>
+              <p>Tap Send test. Also check the notification shade/pull-down tray, not only pop-up banners.</p>
             </article>
 
             <article class="setup-card">
@@ -306,7 +309,7 @@
 
             <article class="setup-card">
               <strong>4. Keep it installed</strong>
-              <p>For best results, use the installed app icon and open it at least daily.</p>
+              <p>For best results, install the app, keep Chrome notifications allowed, and open it daily.</p>
             </article>
           </section>
 
@@ -321,9 +324,10 @@
             <ol>
               <li>Make sure you opened the GitHub Pages HTTPS link, not a local file.</li>
               <li>In Chrome, tap the lock/site icon and allow notifications for the site.</li>
-              <li>Check Android app notification settings for Chrome.</li>
+              <li>Check Android Settings → Apps → Chrome → Notifications and make sure notifications are allowed.</li>
+              <li>Pull down the notification shade; Android may place the notification there without a pop-up banner.</li>
               <li>Use the installed home-screen app instead of a normal browser tab.</li>
-              <li>For timed reminders, keep the app open/recently active. Full always-on background push requires a server.</li>
+              <li>For timed reminders, keep the app open/recently active. Fully reliable background push requires a server.</li>
             </ol>
           </section>
 
@@ -455,7 +459,7 @@
     </main>
 
     <footer class="app-footer">
-      <span id="versionLabel">Private Checklist v5.0</span>
+      <span id="versionLabel">Private Checklist v5.1</span>
       <span>Local-only • No account • No cloud sync</span>
     </footer>
   </div>

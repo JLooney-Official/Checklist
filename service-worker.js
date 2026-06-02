@@ -1,4 +1,4 @@
-const CACHE_NAME = "private-checklist-v5";
+const CACHE_NAME = "private-checklist-v5-1";
 const ASSETS = [
   "./",
   "./index.html",
@@ -50,5 +50,15 @@ self.addEventListener("notificationclick", event => {
 
       if (clients.openWindow) return clients.openWindow("./index.html");
     })
+  );
+});
+
+
+self.addEventListener("message", event => {
+  if (!event.data || event.data.type !== "SHOW_NOTIFICATION") return;
+
+  const { title, options } = event.data;
+  event.waitUntil(
+    self.registration.showNotification(title, options || {})
   );
 });
