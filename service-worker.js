@@ -1,4 +1,4 @@
-const CACHE_NAME = "private-checklist-v4-1";
+const CACHE_NAME = "private-checklist-v5";
 const ASSETS = [
   "./",
   "./index.html",

@@ -16,30 +16,38 @@
       <div>
         <p class="eyebrow">Local-only checklist PWA</p>
         <h1 id="appTitleText">Private Checklist</h1>
-        <p class="subtitle">Private tasks, backups, recurring lists, reminders, and quick daily checkoffs.</p>
+        <p class="subtitle">Private tasks, reminders, recurring lists, templates, and local backups.</p>
       </div>
 
       <div class="hero-actions">
         <button id="installBtn" class="pill hidden" type="button">Install</button>
-        <button id="notifyBtn" class="pill" type="button">Notifications</button>
-        <button id="settingsBtn" class="icon-pill" type="button" aria-label="Open settings">⚙</button>
+        <button id="jumpRemindersBtn" class="pill" type="button">Reminders</button>
+        <button id="jumpSettingsBtn" class="icon-pill" type="button" aria-label="Settings">⚙</button>
       </div>
     </header>
 
+    <nav class="tab-bar" aria-label="App sections">
+      <button class="tab-btn active" type="button" data-tab="tasks">Tasks</button>
+      <button class="tab-btn" type="button" data-tab="add">Add Task</button>
+      <button class="tab-btn" type="button" data-tab="reminders">Reminders</button>
+      <button class="tab-btn" type="button" data-tab="templates">Templates</button>
+      <button class="tab-btn" type="button" data-tab="settings">Settings</button>
+    </nav>
+
     <section class="dashboard">
-      <button class="stat-card filter-chip active" data-view="all" type="button">
+      <button class="stat-card view-chip active" data-view="all" type="button">
         <strong id="openCount">0</strong>
         <span>Open</span>
       </button>
-      <button class="stat-card filter-chip" data-view="today" type="button">
+      <button class="stat-card view-chip" data-view="today" type="button">
         <strong id="todayCount">0</strong>
         <span>Today</span>
       </button>
-      <button class="stat-card filter-chip" data-view="overdue" type="button">
+      <button class="stat-card view-chip" data-view="overdue" type="button">
         <strong id="overdueCount">0</strong>
         <span>Overdue</span>
       </button>
-      <button class="stat-card filter-chip" data-view="done" type="button">
+      <button class="stat-card view-chip" data-view="done" type="button">
         <strong id="doneCount">0</strong>
         <span>Done</span>
       </button>
@@ -55,69 +63,91 @@
       </div>
     </section>
 
-    <section id="notificationPanel" class="notice-panel hidden">
-      <div>
-        <strong>Notifications are off</strong>
-        <p>Enable them to get due-task reminders while this PWA/browser session is active.</p>
-      </div>
-      <button id="enableNotificationsBtn" class="primary" type="button">Enable</button>
-    </section>
-
-    <main class="layout">
-      <section class="left-column">
-        <section class="panel quick-add-panel">
-          <div class="section-head compact">
+    <main>
+      <section id="tab-tasks" class="tab-panel active">
+        <section class="panel">
+          <div class="section-head">
             <div>
-              <h2>Quick add</h2>
-              <p>Fast task entry for phone use.</p>
+              <h2>Tasks</h2>
+              <p id="visibleCountLabel">0 visible tasks</p>
+            </div>
+
+            <div class="mini-actions">
+              <button id="focusTodayBtn" class="pill" type="button">Today</button>
+              <button id="markVisibleDoneBtn" class="pill" type="button">Finish visible</button>
+              <button id="clearDoneBtn" class="pill danger" type="button">Clear done</button>
             </div>
           </div>
 
-          <form id="quickAddForm" class="quick-add">
-            <input id="quickTitle" type="text" placeholder="Quick task..." autocomplete="off" />
-            <button class="primary" type="submit">Add</button>
-          </form>
+          <section class="filter-grid">
+            <label>
+              Search
+              <input id="searchInput" type="search" placeholder="Search tasks, notes, tags..." />
+            </label>
 
-          <div class="quick-buttons">
-            <button class="pill" type="button" data-quick-due="today">Today</button>
-            <button class="pill" type="button" data-quick-due="tomorrow">Tomorrow</button>
-            <button class="pill" type="button" data-quick-priority="high">High priority</button>
+            <label>
+              View
+              <select id="filterStatus">
+                <option value="all">All open</option>
+                <option value="today">Due today</option>
+                <option value="overdue">Overdue</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="important">Important</option>
+                <option value="pinned">Pinned</option>
+                <option value="recurring">Recurring</option>
+                <option value="reminders">With reminders</option>
+                <option value="done">Completed</option>
+                <option value="everything">Everything</option>
+              </select>
+            </label>
+
+            <label>
+              List
+              <select id="filterCategory">
+                <option value="all">All lists</option>
+              </select>
+            </label>
+
+            <label>
+              Sort
+              <select id="sortMode">
+                <option value="smart">Smart</option>
+                <option value="due">Due date</option>
+                <option value="priority">Priority</option>
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="az">A-Z</option>
+                <option value="manual">Manual</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="bulk-bar">
+            <button id="exportBtn" class="pill" type="button">Export backup</button>
+            <label class="pill file-pill">
+              Import backup
+              <input id="importInput" type="file" accept="application/json" />
+            </label>
+            <button id="shareBtn" class="pill" type="button">Share text</button>
+            <button id="resetRecurringBtn" class="pill" type="button">Reset repeats</button>
+          </section>
+
+          <div id="taskList" class="task-list"></div>
+
+          <div id="emptyState" class="empty-state hidden">
+            <div class="empty-icon">✓</div>
+            <h3>Nothing here</h3>
+            <p>Add a task or change your filters.</p>
           </div>
         </section>
+      </section>
 
-        <section class="panel template-panel">
-          <div class="section-head compact">
+      <section id="tab-add" class="tab-panel">
+        <section class="panel form-panel">
+          <div class="section-head">
             <div>
-              <h2>Templates</h2>
-              <p>Add common checklists instantly.</p>
-            </div>
-          </div>
-
-          <div class="template-grid">
-            <button class="template-card" type="button" data-template="daily">
-              <strong>Daily routine</strong>
-              <span>Morning/evening basics</span>
-            </button>
-            <button class="template-card" type="button" data-template="work">
-              <strong>Work block</strong>
-              <span>Focus, email, follow-up</span>
-            </button>
-            <button class="template-card" type="button" data-template="gaming">
-              <strong>Game dailies</strong>
-              <span>Daily gaming checklist</span>
-            </button>
-            <button class="template-card" type="button" data-template="errands">
-              <strong>Errands</strong>
-              <span>Store, calls, chores</span>
-            </button>
-          </div>
-        </section>
-
-        <section class="panel add-panel">
-          <div class="section-head compact">
-            <div>
-              <h2>Add detailed task</h2>
-              <p>Use when you need notes, reminders, tags, or steps.</p>
+              <h2>Add task</h2>
+              <p>Create a task with details, due time, reminder, tags, and subtasks.</p>
             </div>
           </div>
 
@@ -148,6 +178,13 @@
                   <option value="urgent">Urgent</option>
                 </select>
               </label>
+            </div>
+
+            <div class="preset-strip">
+              <button class="pill" type="button" data-due-preset="today">Due today</button>
+              <button class="pill" type="button" data-due-preset="tomorrow">Due tomorrow</button>
+              <button class="pill" type="button" data-due-preset="tonight">Tonight</button>
+              <button class="pill" type="button" data-due-preset="hour">+1 hour</button>
             </div>
 
             <div class="grid-2">
@@ -228,87 +265,199 @@
         </section>
       </section>
 
-      <section class="panel list-panel">
-        <div class="section-head sticky-head">
-          <div>
-            <h2>Checklist</h2>
-            <p id="visibleCountLabel">0 visible tasks</p>
+      <section id="tab-reminders" class="tab-panel">
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <h2>Reminders & notifications</h2>
+              <p>Set up notifications, test them, and see upcoming reminder tasks.</p>
+            </div>
           </div>
 
-          <div class="mini-actions">
-            <button id="focusTodayBtn" class="pill" type="button">Focus today</button>
-            <button id="resetRecurringBtn" class="pill" type="button">Reset repeats</button>
-            <button id="markVisibleDoneBtn" class="pill" type="button">Finish visible</button>
+          <section class="notification-card" id="notificationStatusCard">
+            <div>
+              <span id="notificationBadge" class="status-badge">Checking</span>
+              <h3 id="notificationStatus">Checking notification status...</h3>
+              <p id="notificationDetails">This app will check what your browser allows.</p>
+            </div>
+
+            <div class="notification-actions">
+              <button id="requestNotifyBtn" class="primary" type="button">Enable notifications</button>
+              <button id="testNotifyBtn" class="pill" type="button">Send test</button>
+              <button id="createTestReminderBtn" class="pill" type="button">Create 1-min test</button>
+            </div>
+          </section>
+
+          <section class="setup-grid">
+            <article class="setup-card">
+              <strong>1. Enable</strong>
+              <p>Tap Enable notifications and allow Chrome to send notifications for this site.</p>
+            </article>
+
+            <article class="setup-card">
+              <strong>2. Test</strong>
+              <p>Tap Send test. You should see a phone notification almost immediately.</p>
+            </article>
+
+            <article class="setup-card">
+              <strong>3. Add reminders</strong>
+              <p>Tasks need a due date, due time, and reminder setting to notify you.</p>
+            </article>
+
+            <article class="setup-card">
+              <strong>4. Keep it installed</strong>
+              <p>For best results, use the installed app icon and open it at least daily.</p>
+            </article>
+          </section>
+
+          <section class="reminder-tools">
+            <button id="openNotificationHelpBtn" class="pill" type="button">Troubleshooting</button>
+            <button id="checkNowBtn" class="pill" type="button">Check reminders now</button>
+            <button id="showReminderTasksBtn" class="pill" type="button">Show reminder tasks</button>
+          </section>
+
+          <section id="notificationHelp" class="help-box hidden">
+            <h3>If notifications still do not work</h3>
+            <ol>
+              <li>Make sure you opened the GitHub Pages HTTPS link, not a local file.</li>
+              <li>In Chrome, tap the lock/site icon and allow notifications for the site.</li>
+              <li>Check Android app notification settings for Chrome.</li>
+              <li>Use the installed home-screen app instead of a normal browser tab.</li>
+              <li>For timed reminders, keep the app open/recently active. Full always-on background push requires a server.</li>
+            </ol>
+          </section>
+
+          <section class="reminder-list-wrap">
+            <div class="section-head small">
+              <div>
+                <h2>Upcoming reminders</h2>
+                <p id="reminderSummary">No reminder tasks yet.</p>
+              </div>
+            </div>
+            <div id="upcomingReminderList" class="reminder-list"></div>
+          </section>
+        </section>
+      </section>
+
+      <section id="tab-templates" class="tab-panel">
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <h2>Templates</h2>
+              <p>Add common checklists instantly, then customize them.</p>
+            </div>
           </div>
-        </div>
 
-        <section class="filter-grid">
-          <label>
-            Search
-            <input id="searchInput" type="search" placeholder="Search tasks, notes, tags..." />
-          </label>
-
-          <label>
-            View
-            <select id="filterStatus">
-              <option value="all">All open</option>
-              <option value="today">Due today</option>
-              <option value="overdue">Overdue</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="important">Important</option>
-              <option value="pinned">Pinned</option>
-              <option value="recurring">Recurring</option>
-              <option value="reminders">With reminders</option>
-              <option value="done">Completed</option>
-              <option value="everything">Everything</option>
-            </select>
-          </label>
-
-          <label>
-            List
-            <select id="filterCategory">
-              <option value="all">All lists</option>
-            </select>
-          </label>
-
-          <label>
-            Sort
-            <select id="sortMode">
-              <option value="smart">Smart</option>
-              <option value="due">Due date</option>
-              <option value="priority">Priority</option>
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="az">A-Z</option>
-              <option value="manual">Manual</option>
-            </select>
-          </label>
+          <div class="template-grid">
+            <button class="template-card" type="button" data-template="daily">
+              <strong>Daily routine</strong>
+              <span>Morning and evening basics</span>
+            </button>
+            <button class="template-card" type="button" data-template="work">
+              <strong>Work block</strong>
+              <span>Focus, email, follow-up</span>
+            </button>
+            <button class="template-card" type="button" data-template="gaming">
+              <strong>Game dailies</strong>
+              <span>Daily gaming checklist</span>
+            </button>
+            <button class="template-card" type="button" data-template="errands">
+              <strong>Errands</strong>
+              <span>Store, calls, chores</span>
+            </button>
+          </div>
         </section>
+      </section>
 
-        <section class="bulk-bar">
-          <button id="exportBtn" class="pill" type="button">Export backup</button>
-          <label class="pill file-pill">
-            Import backup
-            <input id="importInput" type="file" accept="application/json" />
-          </label>
-          <button id="shareBtn" class="pill" type="button">Share text</button>
-          <button id="clearDoneBtn" class="pill danger" type="button">Clear done</button>
+      <section id="tab-settings" class="tab-panel">
+        <section class="panel form-panel">
+          <div class="section-head">
+            <div>
+              <h2>Settings</h2>
+              <p>Customize defaults, theme, recurring behavior, and backup/wipe options.</p>
+            </div>
+          </div>
+
+          <form id="settingsForm" class="task-form">
+            <label>
+              App title
+              <input id="settingTitle" type="text" placeholder="Private Checklist" />
+            </label>
+
+            <div class="grid-2">
+              <label>
+                Theme
+                <select id="settingTheme">
+                  <option value="midnight">Midnight</option>
+                  <option value="forest">Forest</option>
+                  <option value="purple">Purple</option>
+                  <option value="plain">Plain dark</option>
+                  <option value="sunset">Sunset</option>
+                </select>
+              </label>
+
+              <label>
+                Default list
+                <input id="settingDefaultCategory" type="text" placeholder="General" />
+              </label>
+            </div>
+
+            <div class="grid-2">
+              <label>
+                Default reminder
+                <select id="settingDefaultReminder">
+                  <option value="off">No reminder</option>
+                  <option value="0">At due time</option>
+                  <option value="5">5 min before</option>
+                  <option value="15">15 min before</option>
+                  <option value="30">30 min before</option>
+                  <option value="60">1 hour before</option>
+                  <option value="1440">1 day before</option>
+                </select>
+              </label>
+
+              <label>
+                Default sort
+                <select id="settingDefaultSort">
+                  <option value="smart">Smart</option>
+                  <option value="due">Due date</option>
+                  <option value="priority">Priority</option>
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="az">A-Z</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="check-row">
+              <input id="settingAutoReset" type="checkbox" />
+              <span>Auto-reset recurring tasks when a new day/week/month starts</span>
+            </label>
+
+            <label class="check-row">
+              <input id="settingReminderSound" type="checkbox" />
+              <span>Allow notification sound/vibration when supported</span>
+            </label>
+
+            <div class="privacy-box">
+              <strong>Privacy</strong>
+              <p>Your checklist is stored locally on this device/browser. GitHub Pages hosts the app files only, not your tasks.</p>
+            </div>
+
+            <div class="form-actions">
+              <button class="primary" type="submit">Save settings</button>
+              <button id="wipeDataBtn" class="pill danger" type="button">Wipe all data</button>
+            </div>
+          </form>
         </section>
-
-        <div id="taskList" class="task-list"></div>
-
-        <div id="emptyState" class="empty-state hidden">
-          <div class="empty-icon">✓</div>
-          <h3>Nothing here</h3>
-          <p>Add a task or change your filters.</p>
-        </div>
       </section>
     </main>
+
     <footer class="app-footer">
-      <span id="versionLabel">Private Checklist v4.1</span>
+      <span id="versionLabel">Private Checklist v5.0</span>
       <span>Local-only • No account • No cloud sync</span>
     </footer>
-
   </div>
 
   <dialog id="editDialog">
@@ -420,91 +569,6 @@
       <div class="dialog-actions">
         <button id="deleteFromEditBtn" class="pill danger" type="button">Delete</button>
         <button class="primary" type="submit">Save changes</button>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog id="settingsDialog">
-    <form id="settingsForm" method="dialog" class="dialog-card">
-      <div class="dialog-head">
-        <h2>Settings</h2>
-        <button id="cancelSettingsBtn" class="icon-pill" type="button" aria-label="Close">×</button>
-      </div>
-
-      <label>
-        App title
-        <input id="settingTitle" type="text" placeholder="Private Checklist" />
-      </label>
-
-      <div class="grid-2">
-        <label>
-          Theme
-          <select id="settingTheme">
-            <option value="midnight">Midnight</option>
-            <option value="forest">Forest</option>
-            <option value="purple">Purple</option>
-            <option value="plain">Plain dark</option>
-            <option value="sunset">Sunset</option>
-          </select>
-        </label>
-
-        <label>
-          Default list
-          <input id="settingDefaultCategory" type="text" placeholder="General" />
-        </label>
-      </div>
-
-      <div class="grid-2">
-        <label>
-          Default reminder
-          <select id="settingDefaultReminder">
-            <option value="off">No reminder</option>
-            <option value="0">At due time</option>
-            <option value="5">5 min before</option>
-            <option value="15">15 min before</option>
-            <option value="30">30 min before</option>
-            <option value="60">1 hour before</option>
-            <option value="1440">1 day before</option>
-          </select>
-        </label>
-
-        <label>
-          Default sort
-          <select id="settingDefaultSort">
-            <option value="smart">Smart</option>
-            <option value="due">Due date</option>
-            <option value="priority">Priority</option>
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="az">A-Z</option>
-            <option value="manual">Manual</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="settings-actions">
-        <button id="requestNotifyBtn" class="pill" type="button">Enable notifications</button>
-        <button id="testNotifyBtn" class="pill" type="button">Test notification</button>
-      </div>
-
-      <label class="check-row">
-        <input id="settingAutoReset" type="checkbox" />
-        <span>Auto-reset recurring tasks when a new day/week/month starts</span>
-      </label>
-
-      <label class="check-row">
-        <input id="settingReminderSound" type="checkbox" />
-        <span>Allow vibration/sound style notifications when supported</span>
-      </label>
-
-      <div class="privacy-box">
-        <strong>Privacy</strong>
-        <p>This app saves tasks locally on this device/browser. GitHub Pages only hosts the app code, not your checklist data. Reminder notifications are created on-device by the app.</p>
-      </div>
-
-      <div class="dialog-actions">
-        <button id="wipeDataBtn" class="pill danger" type="button">Wipe all data</button>
-        <button class="primary" type="submit">Save settings</button>
       </div>
     </form>
   </dialog>
