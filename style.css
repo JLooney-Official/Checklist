@@ -881,3 +881,15 @@ dialog::backdrop {
     grid-template-columns: 1fr;
   }
 }
+
+
+.voice-primary-note {
+  color: var(--muted);
+  font-size: .9rem;
+  margin: 8px 0 0;
+}
+
+#voiceTranscript {
+  font-size: 1.05rem;
+  line-height: 1.45;
+}

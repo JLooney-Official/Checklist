@@ -1,9 +1,10 @@
-const CACHE_NAME = "private-checklist-v5-4";
+const CACHE_NAME = "private-checklist-v5-5";
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
+  "./voice-fix.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png"

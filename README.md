@@ -2,11 +2,11 @@
 
 A private, local-only checklist app.
 
-Current version: 5.4
+Current version: 5.5
 
 ## Notes
 
 - Tasks are stored on this device/browser.
-- Voice mode supports Android keyboard dictation and experimental browser listening.
-- The keyboard microphone is the recommended voice method on Android.
+- Voice mode is centered on Android keyboard dictation.
+- Browser listening is included only as an experimental option.
 - Use Export Backup before clearing browser data.

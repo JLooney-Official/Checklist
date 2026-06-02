@@ -1,4 +1,4 @@
-const APP_VERSION = "5.4";
+const APP_VERSION = "5.5";
 const APP_BUILD = "2026-06-01";
 const STORAGE_KEY = "privateChecklist.tasks.v5";
 const SETTINGS_KEY = "privateChecklist.settings.v5";

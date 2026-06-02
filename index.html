@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=5.5" />
 </head>
 <body>
   <div class="app-shell">
@@ -382,19 +382,19 @@
           <div class="section-head">
             <div>
               <h2>Voice task</h2>
-              <p>Use Android keyboard dictation or browser voice capture, then review and create the task.</p>
+              <p>Use the keyboard microphone, review the parsed task, then create it.</p>
             </div>
           </div>
 
           <section class="voice-steps">
             <article class="setup-card">
-              <strong>Best option</strong>
-              <p>Tap the text box, tap the microphone on your Android keyboard, speak, then tap Parse.</p>
+              <strong>Recommended</strong>
+              <p>Tap Use keyboard mic, tap the microphone on your Android keyboard, speak, then tap Parse task.</p>
             </article>
 
             <article class="setup-card">
-              <strong>Browser voice</strong>
-              <p>Tap Check mic, then Start browser listening. This depends on Android Chrome support.</p>
+              <strong>Experimental browser voice</strong>
+              <p>Some Android browsers do not support this reliably. Keyboard mic is the main voice mode.</p>
             </article>
 
             <article class="setup-card">
@@ -413,7 +413,7 @@
             <div class="notification-actions">
               <button id="focusDictationBtn" class="primary" type="button">Use keyboard mic</button>
               <button id="checkMicBtn" class="pill" type="button">Check mic</button>
-              <button id="startVoiceBtn" class="pill" type="button">Start browser listening</button>
+              <button id="startVoiceBtn" class="pill" type="button">Try browser listening</button>
               <button id="stopVoiceBtn" class="pill" type="button">Stop</button>
             </div>
           </section>
@@ -422,7 +422,7 @@
             <div class="voice-card">
               <label>
                 Voice text
-                <textarea id="voiceTranscript" inputmode="text" autocomplete="off" placeholder="Tap here, use the keyboard microphone, or press Start browser listening."></textarea>
+                <textarea id="voiceTranscript" inputmode="text" autocomplete="off" placeholder="Tap here, use the keyboard microphone, or press Try browser listening."></textarea>
               </label>
 
               <div class="preset-strip">
@@ -691,6 +691,7 @@
 
   <div id="toast" class="toast hidden"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=5.5"></script>
+  <script src="voice-fix.js?v=5.5"></script>
 </body>
 </html>
